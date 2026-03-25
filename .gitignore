@@ -41,3 +41,14 @@ app-example
 # generated native folders
 /ios
 /android
+
+# agent skills
+.agent
+.agents
+.claude
+skills-lock.json
+
+#rules
+.cursorrules
+AGENTS.md
+CLAUDE.md

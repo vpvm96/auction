@@ -1,98 +1,141 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
+import { router } from 'expo-router'
+import { Colors } from '@/constants/colors'
+import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { StatsCard } from '@/components/home/stats-card'
+import { CategoryGrid } from '@/components/home/category-grid'
+import { DateSelector } from '@/components/home/date-selector'
+import { NewsBanner } from '@/components/home/news-banner'
+import { QuizBanner } from '@/components/home/quiz-banner'
+import { MOCK_STATS, MOCK_NOTIFICATIONS } from '@/lib/mock-data'
+import { useNotificationStore } from '@/lib/store/useNotificationStore'
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+function Header() {
+  const readIds = useNotificationStore((s) => s.readIds)
+  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !readIds.has(n.id)).length
+
+  const handleSearchPress = () => {
+    router.push('/search')
+  }
+
+  const handleNotificationPress = () => {
+    router.push('/notifications')
+  }
+
+  return (
+    <View style={styles.header}>
+      <View style={styles.logoArea}>
+        <View style={styles.logoIcon} />
+      </View>
+      <Pressable style={styles.searchBar} onPress={handleSearchPress}>
+        <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
+        <Text style={styles.searchPlaceholder}>경매 물건 검색</Text>
+      </Pressable>
+      <Pressable style={styles.bellButton} onPress={handleNotificationPress}>
+        <Ionicons name="notifications-outline" size={24} color={Colors.textPrimary} />
+        {unreadCount > 0 ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {unreadCount > 99 ? '99+' : String(unreadCount)}
+            </Text>
+          </View>
+        ) : null}
+      </Pressable>
+    </View>
+  )
+}
 
 export default function HomeScreen() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <Header />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <NewsBanner />
+        <StatsCard
+          realEstate={MOCK_STATS.realEstate}
+          personal={MOCK_STATS.personal}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
-
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+        <QuizBanner />
+        <DateSelector />
+        <CategoryGrid />
+      </ScrollView>
+    </SafeAreaView>
+  )
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: Spacing.page,
+    paddingVertical: Spacing.lg,
+    backgroundColor: Colors.white,
+    gap: Spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  logoArea: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  logoIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.primary,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    borderRadius: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md + 1,
+    gap: Spacing.md,
+  },
+  searchPlaceholder: {
+    fontSize: FontSize.base,
+    color: Colors.textTertiary,
+  },
+  bellButton: {
+    padding: Spacing.xs,
+  },
+  badge: {
     position: 'absolute',
+    top: 0,
+    right: -2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
   },
-});
+  badgeText: {
+    fontSize: 9,
+    fontFamily: FontFamily.bold,
+    color: Colors.white,
+    textAlign: 'center',
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.section,
+  },
+})
