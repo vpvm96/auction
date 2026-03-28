@@ -100,10 +100,28 @@ function SocialIcon({ provider, size, color }: { provider: SocialProvider; size:
 interface SocialLoginButtonProps {
   provider: SocialProvider
   onPress: () => void
+  variant?: 'full' | 'icon'
 }
 
-export function SocialLoginButton({ provider, onPress }: SocialLoginButtonProps) {
+export function SocialLoginButton({ provider, onPress, variant = 'full' }: SocialLoginButtonProps) {
   const config = PROVIDER_CONFIG[provider]
+
+  if (variant === 'icon') {
+    return (
+      <Pressable
+        style={[
+          styles.iconButton,
+          { backgroundColor: config.bgColor },
+          config.borderColor != null
+            ? { borderWidth: 1, borderColor: config.borderColor }
+            : null,
+        ]}
+        onPress={onPress}
+      >
+        <SocialIcon provider={provider} size={22} color={config.textColor} />
+      </Pressable>
+    )
+  }
 
   return (
     <Pressable
@@ -139,5 +157,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: FontSize.base,
     fontFamily: FontFamily.semibold,
+  },
+  iconButton: {
+    width: 52,
+    height: 52,
+    borderRadius: Radius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 })

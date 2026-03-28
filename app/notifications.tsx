@@ -89,7 +89,6 @@ export default function NotificationsScreen() {
         data={MOCK_NOTIFICATIONS}
         renderItem={renderNotifItem}
         keyExtractor={(item) => item.id}
-        estimatedItemSize={90}
         ItemSeparatorComponent={NotifSeparator}
         showsVerticalScrollIndicator={false}
         extraData={readIds}

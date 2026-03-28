@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native'
+import { StyleSheet, Text, View, Pressable, ScrollView, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
 import { useLocalSearchParams, router } from 'expo-router'
@@ -7,25 +7,28 @@ import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { createAuctionRenderItem } from '@/components/auction/render-auction-item'
-import { MOCK_AUCTIONS, MOCK_COURTS, type AuctionType } from '@/lib/mock-data'
+import { MOCK_COURTS, type AuctionType } from '@/lib/mock-data'
 import { useListFilterStore } from '@/lib/store/useListFilterStore'
 import { useFavoritesStore } from '@/lib/store/useFavoritesStore'
+import { useAuctions } from '@/lib/queries/auctions'
+import { toAuctionItem } from '@/lib/api/auctions'
 
 interface FilterTab {
   type: AuctionType | 'all'
   label: string
+  category: string | undefined
 }
 
 const FILTER_TABS: FilterTab[] = [
-  { type: 'all', label: '전체' },
-  { type: 'apartment', label: '아파트' },
-  { type: 'house', label: '주택' },
-  { type: 'officetel', label: '오피스텔' },
-  { type: 'commercial', label: '상가' },
-  { type: 'land', label: '토지' },
-  { type: 'car', label: '자동차' },
-  { type: 'equipment', label: '중기' },
-  { type: 'other', label: '기타' },
+  { type: 'all', label: '전체', category: undefined },
+  { type: 'apartment', label: '아파트', category: '아파트' },
+  { type: 'house', label: '주택', category: '주택' },
+  { type: 'officetel', label: '오피스텔', category: '오피스텔' },
+  { type: 'commercial', label: '상가', category: '상가' },
+  { type: 'land', label: '토지', category: '토지' },
+  { type: 'car', label: '자동차', category: '자동차' },
+  { type: 'equipment', label: '중기', category: '중기' },
+  { type: 'other', label: '기타', category: '기타' },
 ]
 
 type SortType = 'latest' | 'deadline' | 'price_asc' | 'price_desc'
@@ -75,23 +78,26 @@ export default function ListScreen() {
     ? (MOCK_COURTS.find((c) => c.id === selectedCourtId)?.name ?? '법원 선택')
     : null
 
-  let filtered = selectedType === 'all'
-    ? MOCK_AUCTIONS
-    : MOCK_AUCTIONS.filter((a) => a.type === selectedType)
+  const activeTab = FILTER_TABS.find((t) => t.type === selectedType)
 
-  if (selectedCourtId != null) {
-    const court = MOCK_COURTS.find((c) => c.id === selectedCourtId)
-    if (court != null) {
-      filtered = filtered.filter((a) => a.court === court.name)
-    }
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useAuctions({ category: activeTab?.category })
+
+  const allItems = (data?.pages ?? []).flatMap((p) => p.items.map(toAuctionItem))
+
+  let sorted = allItems
+  if (selectedSort === 'deadline') {
+    sorted = [...allItems].sort((a, b) => a.auctionDate.localeCompare(b.auctionDate))
+  } else if (selectedSort === 'price_asc') {
+    sorted = [...allItems].sort((a, b) => a.minimumBid - b.minimumBid)
+  } else if (selectedSort === 'price_desc') {
+    sorted = [...allItems].sort((a, b) => b.minimumBid - a.minimumBid)
   }
 
-  if (selectedSort === 'deadline') {
-    filtered = [...filtered].sort((a, b) => a.auctionDate.localeCompare(b.auctionDate))
-  } else if (selectedSort === 'price_asc') {
-    filtered = [...filtered].sort((a, b) => a.minimumBid - b.minimumBid)
-  } else if (selectedSort === 'price_desc') {
-    filtered = [...filtered].sort((a, b) => b.minimumBid - a.minimumBid)
+  const handleEndReached = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
   }
 
   return (
@@ -139,7 +145,8 @@ export default function ListScreen() {
             size={14}
             color={selectedCourtId != null ? Colors.primary : Colors.textSecondary}
           />
-          <Text style={[styles.courtButtonText, selectedCourtId != null ? styles.courtButtonTextActive : null]}
+          <Text
+            style={[styles.courtButtonText, selectedCourtId != null ? styles.courtButtonTextActive : null]}
             numberOfLines={1}
           >
             {selectedCourtName ?? '전체 법원'}
@@ -154,7 +161,7 @@ export default function ListScreen() {
 
       <View style={styles.sortRow}>
         <Text style={styles.resultCount}>
-          {filtered.length}건
+          {isLoading ? '-' : `${sorted.length}건`}
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.sortOptions}>
@@ -176,15 +183,31 @@ export default function ListScreen() {
         </ScrollView>
       </View>
 
-      <FlashList
-        data={filtered}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        estimatedItemSize={114}
-        extraData={favoriteIds}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      ) : (
+        <FlashList
+          data={sorted}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          extraData={favoriteIds}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <ActivityIndicator
+                style={styles.footerLoader}
+                color={Colors.primary}
+              />
+            ) : null
+          }
+          estimatedItemSize={122}
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -304,8 +327,16 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontFamily: FontFamily.bold,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   listContent: {
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.section,
+  },
+  footerLoader: {
+    paddingVertical: Spacing.xl,
   },
 })

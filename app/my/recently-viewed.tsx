@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native'
+import { StyleSheet, Text, View, Pressable, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
 import { router } from 'expo-router'
@@ -6,9 +6,10 @@ import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Spacing } from '@/constants/tokens'
 import { createAuctionRenderItem } from '@/components/auction/render-auction-item'
-import { MOCK_AUCTIONS, type AuctionItem } from '@/lib/mock-data'
 import { useRecentlyViewedStore } from '@/lib/store/useRecentlyViewedStore'
 import { useFavoritesStore } from '@/lib/store/useFavoritesStore'
+import { useAuctionsByIds } from '@/lib/queries/auctions'
+import { toAuctionItem } from '@/lib/api/auctions'
 
 export default function RecentlyViewedScreen() {
   const ids = useRecentlyViewedStore((s) => s.ids)
@@ -17,9 +18,12 @@ export default function RecentlyViewedScreen() {
   const toggleFavorite = useFavoritesStore((s) => s.toggle)
   const renderItem = createAuctionRenderItem({ favoriteIds, toggleFavorite })
 
+  const results = useAuctionsByIds(ids)
+  const isLoading = results.some((r) => r.isLoading)
   const items = ids
-    .map((id) => MOCK_AUCTIONS.find((a) => a.id === id))
-    .filter((a): a is AuctionItem => a != null)
+    .map((id) => results.find((r) => r.data != null && String(r.data.id) === id)?.data)
+    .filter((d) => d != null)
+    .map(toAuctionItem)
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -37,15 +41,19 @@ export default function RecentlyViewedScreen() {
         )}
       </View>
 
-      {items.length > 0 ? (
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      ) : items.length > 0 ? (
         <FlashList
           data={items}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          estimatedItemSize={114}
           extraData={favoriteIds}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          estimatedItemSize={122}
         />
       ) : (
         <View style={styles.empty}>
@@ -92,6 +100,11 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     width: 40,
     textAlign: 'right',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listContent: {
     paddingTop: Spacing.lg,

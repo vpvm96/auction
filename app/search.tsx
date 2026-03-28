@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TextInput, Pressable } from 'react-native'
+import { StyleSheet, Text, View, TextInput, Pressable, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
 import { Ionicons } from '@expo/vector-icons'
@@ -7,25 +7,41 @@ import { useState } from 'react'
 import { Colors } from '@/constants/colors'
 import { FontSize, HIT_SLOP, Radius, Spacing } from '@/constants/tokens'
 import { createAuctionRenderItem } from '@/components/auction/render-auction-item'
-import { MOCK_AUCTIONS } from '@/lib/mock-data'
 import { useFavoritesStore } from '@/lib/store/useFavoritesStore'
+import { useAuctions } from '@/lib/queries/auctions'
+import { toAuctionItem } from '@/lib/api/auctions'
 
 export default function SearchScreen() {
-  const [query, setQuery] = useState('')
+  const [inputQuery, setInputQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const favoriteIds = useFavoritesStore((s) => s.favoriteIds)
   const toggleFavorite = useFavoritesStore((s) => s.toggle)
   const renderItem = createAuctionRenderItem({ favoriteIds, toggleFavorite })
 
-  const results = query.trim().length === 0
-    ? []
-    : MOCK_AUCTIONS.filter((a) => {
-        const q = query.trim().toLowerCase()
-        return (
-          a.title.toLowerCase().includes(q) ||
-          a.address.toLowerCase().includes(q) ||
-          a.caseNumber.toLowerCase().includes(q)
-        )
-      })
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useAuctions(
+    { keyword: searchQuery },
+    { enabled: searchQuery.length > 0 },
+  )
+
+  const results = searchQuery.length > 0
+    ? (data?.pages ?? []).flatMap((p) => p.items.map(toAuctionItem))
+    : []
+
+  const handleSubmit = () => {
+    const trimmed = inputQuery.trim()
+    setSearchQuery(trimmed)
+  }
+
+  const handleClear = () => {
+    setInputQuery('')
+    setSearchQuery('')
+  }
+
+  const handleEndReached = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -39,23 +55,28 @@ export default function SearchScreen() {
             style={styles.input}
             placeholder="경매 물건 검색"
             placeholderTextColor={Colors.textTertiary}
-            value={query}
-            onChangeText={setQuery}
+            value={inputQuery}
+            onChangeText={setInputQuery}
             autoFocus
             returnKeyType="search"
+            onSubmitEditing={handleSubmit}
           />
-          {query.length > 0 ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={HIT_SLOP}>
+          {inputQuery.length > 0 ? (
+            <Pressable onPress={handleClear} hitSlop={HIT_SLOP}>
               <Ionicons name="close-circle" size={16} color={Colors.textTertiary} />
             </Pressable>
           ) : null}
         </View>
       </View>
 
-      {query.trim().length === 0 ? (
+      {searchQuery.length === 0 ? (
         <View style={styles.hint}>
           <Ionicons name="search" size={48} color={Colors.border} />
           <Text style={styles.hintText}>물건명, 소재지, 사건번호로 검색하세요</Text>
+        </View>
+      ) : isLoading ? (
+        <View style={styles.hint}>
+          <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       ) : results.length === 0 ? (
         <View style={styles.hint}>
@@ -67,10 +88,17 @@ export default function SearchScreen() {
           data={results}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          estimatedItemSize={114}
           extraData={favoriteIds}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <ActivityIndicator style={styles.footerLoader} color={Colors.primary} />
+            ) : null
+          }
+          estimatedItemSize={122}
         />
       )}
     </SafeAreaView>
@@ -123,5 +151,8 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.section,
+  },
+  footerLoader: {
+    paddingVertical: Spacing.xl,
   },
 })

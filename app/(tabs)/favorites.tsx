@@ -1,12 +1,13 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, LineHeight, Spacing } from '@/constants/tokens'
 import { createAuctionRenderItem } from '@/components/auction/render-auction-item'
-import { MOCK_AUCTIONS } from '@/lib/mock-data'
 import { useFavoritesStore } from '@/lib/store/useFavoritesStore'
+import { useAuctionsByIds } from '@/lib/queries/auctions'
+import { toAuctionItem } from '@/lib/api/auctions'
 
 function EmptyState() {
   return (
@@ -23,8 +24,14 @@ function EmptyState() {
 export default function FavoritesScreen() {
   const favoriteIds = useFavoritesStore((s) => s.favoriteIds)
   const toggleFavorite = useFavoritesStore((s) => s.toggle)
-  const favoriteItems = MOCK_AUCTIONS.filter((a) => favoriteIds.has(a.id))
+  const favoriteIdArray = Array.from(favoriteIds)
   const renderItem = createAuctionRenderItem({ favoriteIds, toggleFavorite })
+
+  const results = useAuctionsByIds(favoriteIdArray)
+  const isLoading = results.some((r) => r.isLoading)
+  const favoriteItems = results
+    .filter((r) => r.data != null)
+    .map((r) => toAuctionItem(r.data!))
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -33,17 +40,21 @@ export default function FavoritesScreen() {
         <Text style={styles.headerCount}>{favoriteItems.length}건</Text>
       </View>
 
-      {favoriteItems.length === 0 ? (
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      ) : favoriteItems.length === 0 ? (
         <EmptyState />
       ) : (
         <FlashList
           data={favoriteItems}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          estimatedItemSize={114}
           extraData={favoriteIds}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          estimatedItemSize={122}
         />
       )}
     </SafeAreaView>
@@ -74,6 +85,11 @@ const styles = StyleSheet.create({
     fontSize: FontSize.base,
     fontFamily: FontFamily.semibold,
     color: Colors.primary,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listContent: {
     paddingTop: Spacing.lg,

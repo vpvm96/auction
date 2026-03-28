@@ -61,7 +61,6 @@ export default function NewsListScreen() {
         data={MOCK_NEWS_ARTICLES}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        estimatedItemSize={120}
         ItemSeparatorComponent={ItemSeparator}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
