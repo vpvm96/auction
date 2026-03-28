@@ -1,5 +1,8 @@
+import "@/global.css";
 import { Colors } from "@/constants/colors";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
+import { AuthProvider } from "@/components/providers/auth-provider";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -7,6 +10,16 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 2,
+    },
+  },
+});
 
 SplashScreen.preventAutoHideAsync();
 
@@ -48,18 +61,22 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="notifications" />
-        <Stack.Screen name="auth" options={{ presentation: "modal" }} />
-        <Stack.Screen
-          name="region-select"
-          options={{ presentation: "modal" }}
-        />
-      </Stack>
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={styles.root}>
+        <StatusBar style="dark" />
+        <AuthProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="notifications" />
+            <Stack.Screen name="auth" />
+            <Stack.Screen
+              name="region-select"
+              options={{ presentation: "modal" }}
+            />
+          </Stack>
+        </AuthProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }
 
