@@ -52,3 +52,6 @@ skills-lock.json
 .cursorrules
 AGENTS.md
 CLAUDE.md
+
+# env
+.env
