@@ -33,15 +33,15 @@ export interface KamcoAuctionItem {
   pbctClsDtm: string
   uscbdCnt: number
   iqryCnt: number
-  cltrImgFiles: string[]
+  cltrImgFiles: string[] | null
   discountRate: number
   latestTradeAmount: number | null
   latestTradeDate: string | null
   createdAt: string
   updatedAt: string
   // 상세 조회 전용
-  recentTrades?: RealEstateTrade[]
-  investmentAnalysis?: InvestmentAnalysis
+  recentTrades?: RealEstateTrade[] | null
+  investmentAnalysis?: InvestmentAnalysis | null
 }
 
 export interface PagedResponse<T> {
@@ -96,6 +96,8 @@ export function toAuctionItem(item: KamcoAuctionItem): AuctionItem {
       ? Math.round((item.minBidPrc / item.apslAsesAvgAmt) * 100)
       : 0
 
+  const images = item.cltrImgFiles ?? []
+
   return {
     id: String(item.id),
     type: parseCategoryType(item.ctgrFullNm),
@@ -109,8 +111,8 @@ export function toAuctionItem(item: KamcoAuctionItem): AuctionItem {
     bidRatio,
     failedBids: item.uscbdCnt,
     area: 0,
-    thumbnailUrl: item.cltrImgFiles[0] ?? '',
-    imageUrls: item.cltrImgFiles,
+    thumbnailUrl: images[0] ?? '',
+    imageUrls: images,
   }
 }
 
