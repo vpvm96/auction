@@ -1,18 +1,24 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
-import { Colors } from '@/constants/colors'
-import { FontFamily, FontSize, Spacing } from '@/constants/tokens'
+import { Colors } from "@/constants/colors";
+import { FontFamily, FontSize, Spacing } from "@/constants/tokens";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 interface NavBarProps {
-  title: string
-  rightAction?: React.ReactNode
+  title: string;
+  rightAction?: React.ReactNode;
 }
 
 export function NavBar({ title, rightAction }: NavBarProps) {
   return (
     <View style={styles.container}>
-      <Pressable onPress={() => router.back()} hitSlop={8}>
+      <Pressable
+        accessible={true}
+        accessibilityLabel="뒤로가기"
+        accessibilityRole="button"
+        onPress={() => router.back()}
+        hitSlop={8}
+      >
         <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
       </Pressable>
       <Text style={styles.title} numberOfLines={1}>
@@ -20,13 +26,13 @@ export function NavBar({ title, rightAction }: NavBarProps) {
       </Text>
       {rightAction != null ? rightAction : <View style={styles.spacer} />}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xl,
     backgroundColor: Colors.card,
@@ -35,7 +41,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
     color: Colors.textPrimary,
@@ -44,4 +50,4 @@ const styles = StyleSheet.create({
   spacer: {
     width: 24,
   },
-})
+});

@@ -1,26 +1,32 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native'
-import { Image } from 'expo-image'
-import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
-import { useTheme } from '@/hooks/useTheme'
-import { FontFamily, FontSize, HIT_SLOP, Radius, Spacing } from '@/constants/tokens'
-import type { AuctionItem } from '@/lib/mock-data'
-import { formatPrice, formatShortDate } from '@/lib/format'
+import {
+    FontFamily,
+    FontSize,
+    HIT_SLOP,
+    Radius,
+    Spacing,
+} from "@/constants/tokens";
+import { useTheme } from "@/hooks/useTheme";
+import { formatPrice, formatShortDate } from "@/lib/format";
+import type { AuctionItem } from "@/lib/mock-data";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { router } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 interface AuctionCardProps {
-  id: string
-  type: AuctionItem['type']
-  title: string
-  address: string
-  auctionDate: string
-  appraisalPrice: number
-  minimumBid: number
-  bidRatio: number
-  failedBids: number
-  area: number
-  thumbnailUrl: string
-  isFavorited: boolean
-  onToggleFavorite: (id: string) => void
+  id: string;
+  type: AuctionItem["type"];
+  title: string;
+  address: string;
+  auctionDate: string;
+  appraisalPrice: number;
+  minimumBid: number;
+  bidRatio: number;
+  failedBids: number;
+  area: number;
+  thumbnailUrl: string;
+  isFavorited: boolean;
+  onToggleFavorite: (id: string) => void;
 }
 
 export function AuctionCard({
@@ -37,26 +43,38 @@ export function AuctionCard({
   isFavorited,
   onToggleFavorite,
 }: AuctionCardProps) {
-  const theme = useTheme()
+  const theme = useTheme();
 
   const handlePress = () => {
-    router.push(`/${id}`)
-  }
+    router.push(`/${id}`);
+  };
 
   const handleFavorite = () => {
-    onToggleFavorite(id)
-  }
+    onToggleFavorite(id);
+  };
 
   // 입찰률 색상: 100% 이상 hot, 80% 이상 warning, 그 외 primary
   const ratioColor =
-    bidRatio >= 100 ? theme.auction.hot : bidRatio >= 80 ? theme.status.warning : theme.brand.primary
+    bidRatio >= 100
+      ? theme.auction.hot
+      : bidRatio >= 80
+        ? theme.status.warning
+        : theme.brand.primary;
   const ratioTrackColor =
-    bidRatio >= 100 ? theme.auction.hotBg : bidRatio >= 80 ? theme.status.warningBg : theme.brand.primaryLight
+    bidRatio >= 100
+      ? theme.auction.hotBg
+      : bidRatio >= 80
+        ? theme.status.warningBg
+        : theme.brand.primaryLight;
   // 바 너비는 최대 100%로 클램프
-  const barWidth = `${Math.min(bidRatio, 100)}%` as const
+  const barWidth = `${Math.min(bidRatio, 100)}%` as const;
 
   return (
     <Pressable
+      accessible={true}
+      accessibilityLabel={`${title}, ${address}, 최저입찰가 ${formatPrice(minimumBid)}`}
+      accessibilityRole="button"
+      accessibilityHint={`입찰률 ${bidRatio}%, ${failedBids > 0 ? `${failedBids}회 유찰` : "첫 경매"}`}
       style={[
         styles.container,
         {
@@ -76,7 +94,12 @@ export function AuctionCard({
           transition={200}
         />
         {failedBids > 0 ? (
-          <View style={[styles.failedBadgeOverlay, { backgroundColor: theme.auction.hot }]}>
+          <View
+            style={[
+              styles.failedBadgeOverlay,
+              { backgroundColor: theme.auction.hot },
+            ]}
+          >
             <Text style={styles.failedBadgeText}>{failedBids}회 유찰</Text>
           </View>
         ) : null}
@@ -86,20 +109,30 @@ export function AuctionCard({
       <View style={styles.info}>
         {/* 상단: 제목 + 찜 버튼 */}
         <View style={styles.topRow}>
-          <Text style={[styles.title, { color: theme.text.primary }]} numberOfLines={1}>
+          <Text
+            style={[styles.title, { color: theme.text.primary }]}
+            numberOfLines={1}
+          >
             {title}
           </Text>
           <Pressable onPress={handleFavorite} hitSlop={HIT_SLOP}>
             <Ionicons
-              name={isFavorited ? 'heart' : 'heart-outline'}
+              name={isFavorited ? "heart" : "heart-outline"}
               size={20}
               color={isFavorited ? theme.auction.hot : theme.text.tertiary}
+              accessible={true}
+              accessibilityLabel={isFavorited ? "찜 해제" : "찜하기"}
+              accessibilityRole="button"
+              accessibilityHint={`${title} ${isFavorited ? "찜 해제하기" : "찜하기"}`}
             />
           </Pressable>
         </View>
 
         {/* 주소 */}
-        <Text style={[styles.address, { color: theme.text.secondary }]} numberOfLines={1}>
+        <Text
+          style={[styles.address, { color: theme.text.secondary }]}
+          numberOfLines={1}
+        >
           {address}
         </Text>
 
@@ -111,9 +144,16 @@ export function AuctionCard({
         {/* 입찰률 프로그레스 바 */}
         <View style={styles.ratioRow}>
           <View style={[styles.barTrack, { backgroundColor: ratioTrackColor }]}>
-            <View style={[styles.barFill, { width: barWidth, backgroundColor: ratioColor }]} />
+            <View
+              style={[
+                styles.barFill,
+                { width: barWidth, backgroundColor: ratioColor },
+              ]}
+            />
           </View>
-          <Text style={[styles.ratioLabel, { color: ratioColor }]}>{bidRatio}%</Text>
+          <Text style={[styles.ratioLabel, { color: ratioColor }]}>
+            {bidRatio}%
+          </Text>
         </View>
 
         {/* 감정가 */}
@@ -123,37 +163,55 @@ export function AuctionCard({
 
         {/* 메타 정보: 일자 + 면적 */}
         <View style={styles.metaRow}>
-          <View style={styles.metaItem}>
-            <Ionicons name="calendar-outline" size={11} color={theme.text.tertiary} />
+          <View
+            style={styles.metaItem}
+            accessible={true}
+            accessibilityLabel={`경매 일자 ${formatShortDate(auctionDate)}`}
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={11}
+              color={theme.text.tertiary}
+            />
             <Text style={[styles.metaText, { color: theme.text.tertiary }]}>
               {formatShortDate(auctionDate)}
             </Text>
           </View>
           {area > 0 ? (
-            <View style={styles.metaItem}>
-              <Ionicons name="expand-outline" size={11} color={theme.text.tertiary} />
-              <Text style={[styles.metaText, { color: theme.text.tertiary }]}>{area}㎡</Text>
+            <View
+              style={styles.metaItem}
+              accessible={true}
+              accessibilityLabel={`면적 ${area}㎡`}
+            >
+              <Ionicons
+                name="expand-outline"
+                size={11}
+                color={theme.text.tertiary}
+              />
+              <Text style={[styles.metaText, { color: theme.text.tertiary }]}>
+                {area}㎡
+              </Text>
             </View>
           ) : null}
         </View>
       </View>
     </Pressable>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
     marginHorizontal: Spacing.page,
     marginBottom: Spacing.xl,
-    overflow: 'hidden',
+    overflow: "hidden",
     padding: Spacing.xl,
     gap: Spacing.xl,
   },
   thumbnailWrap: {
-    position: 'relative',
+    position: "relative",
   },
   thumbnail: {
     width: 96,
@@ -161,28 +219,28 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
   },
   failedBadgeOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     borderBottomLeftRadius: Radius.lg,
     borderBottomRightRadius: Radius.lg,
     paddingVertical: 4,
-    alignItems: 'center',
+    alignItems: "center",
   },
   failedBadgeText: {
     fontSize: FontSize.xxs,
     fontFamily: FontFamily.bold,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   info: {
     flex: 1,
     gap: Spacing.xs,
   },
   topRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     gap: Spacing.xs,
   },
   title: {
@@ -199,41 +257,41 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xxs,
   },
   ratioRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.md,
   },
   barTrack: {
     flex: 1,
     height: 5,
     borderRadius: Radius.full,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   barFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: Radius.full,
   },
   ratioLabel: {
     fontSize: FontSize.xs,
     fontFamily: FontFamily.bold,
     minWidth: 32,
-    textAlign: 'right',
+    textAlign: "right",
   },
   appraisalPrice: {
     fontSize: FontSize.xs,
   },
   metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.md,
     marginTop: Spacing.xxs,
   },
   metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.xxs,
   },
   metaText: {
     fontSize: FontSize.xs,
   },
-})
+});

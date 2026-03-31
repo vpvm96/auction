@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
+import { useTheme } from "@/hooks/useTheme";
+import { useState } from "react";
 import {
   KeyboardTypeOptions,
   ReturnKeyTypeOptions,
@@ -6,21 +8,19 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native'
-import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
-import { useTheme } from '@/hooks/useTheme'
+} from "react-native";
 
 interface FormInputProps {
-  label: string
-  value: string
-  onChangeText: (text: string) => void
-  placeholder?: string
-  secureTextEntry?: boolean
-  keyboardType?: KeyboardTypeOptions
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'
-  returnKeyType?: ReturnKeyTypeOptions
-  onSubmitEditing?: () => void
-  error?: string
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  secureTextEntry?: boolean;
+  keyboardType?: KeyboardTypeOptions;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  returnKeyType?: ReturnKeyTypeOptions;
+  onSubmitEditing?: () => void;
+  error?: string;
 }
 
 export function FormInput({
@@ -30,25 +30,36 @@ export function FormInput({
   placeholder,
   secureTextEntry,
   keyboardType,
-  autoCapitalize = 'none',
+  autoCapitalize = "none",
   returnKeyType,
   onSubmitEditing,
   error,
 }: FormInputProps) {
-  const theme = useTheme()
-  const [isFocused, setIsFocused] = useState(false)
+  const theme = useTheme();
+  const [isFocused, setIsFocused] = useState(false);
 
-  const borderColor = error != null
-    ? theme.status.danger
-    : isFocused
-      ? theme.brand.primary
-      : theme.border.default
+  const borderColor =
+    error != null
+      ? theme.status.danger
+      : isFocused
+        ? theme.brand.primary
+        : theme.border.default;
 
   return (
     <View style={styles.container}>
       <Text style={[styles.label, { color: theme.text.primary }]}>{label}</Text>
-      <View style={[styles.inputWrapper, { backgroundColor: theme.bg.surface, borderColor }]}>
+      <View
+        style={[
+          styles.inputWrapper,
+          { backgroundColor: theme.bg.surface, borderColor },
+        ]}
+      >
         <TextInput
+          accessible={true}
+          accessibilityLabel={label}
+          accessibilityRole="adjustable"
+          accessibilityState={{ disabled: false, invalid: error != null }}
+          accessibilityHint={error || placeholder}
           style={[styles.input, { color: theme.text.primary }]}
           value={value}
           onChangeText={onChangeText}
@@ -65,10 +76,16 @@ export function FormInput({
         />
       </View>
       {error != null ? (
-        <Text style={[styles.errorText, { color: theme.status.danger }]}>{error}</Text>
+        <Text
+          accessible={true}
+          accessibilityLiveRegion="polite"
+          style={[styles.errorText, { color: theme.status.danger }]}
+        >
+          {error}
+        </Text>
       ) : null}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -94,4 +111,4 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontFamily: FontFamily.regular,
   },
-})
+});

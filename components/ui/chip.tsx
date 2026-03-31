@@ -9,21 +9,26 @@
  *   <Chip label="선택됨" selected />
  *   <Chip label="필터" selected onPress={() => setSelected(!selected)} />
  */
-import { Pressable, StyleSheet, Text } from 'react-native'
-import { useTheme } from '@/hooks/useTheme'
-import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
+import { useTheme } from "@/hooks/useTheme";
+import { Pressable, StyleSheet, Text } from "react-native";
 
 interface ChipProps {
-  label: string
-  selected?: boolean
-  onPress?: () => void
+  label: string;
+  selected?: boolean;
+  onPress?: () => void;
 }
 
 export function Chip({ label, selected = false, onPress }: ChipProps) {
-  const theme = useTheme()
+  const theme = useTheme();
 
   return (
     <Pressable
+      accessible={true}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      accessibilityState={{ checked: selected, disabled: onPress == null }}
+      accessibilityHint={selected ? "선택됨" : "선택 안 됨"}
       style={[
         styles.base,
         {
@@ -45,7 +50,7 @@ export function Chip({ label, selected = false, onPress }: ChipProps) {
         {label}
       </Text>
     </Pressable>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -59,4 +64,4 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontFamily: FontFamily.medium,
   },
-})
+});

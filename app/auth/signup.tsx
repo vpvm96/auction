@@ -1,187 +1,212 @@
-import { useEffect, useRef, useState } from 'react'
+import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
+import { useTheme } from "@/hooks/useTheme";
+import { useAuthStore } from "@/lib/store/useAuthStore";
+import { EMAIL_REGEX } from "@/lib/validation";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+} from "react-native";
 import Animated, {
-  FadeInDown,
-  FadeInUp,
-  FadeOutUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated'
-import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
-import { useTheme } from '@/hooks/useTheme'
-import { useAuthStore } from '@/lib/store/useAuthStore'
-import { EMAIL_REGEX } from '@/lib/validation'
+    FadeInDown,
+    FadeInUp,
+    FadeOutUp,
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+} from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 4;
 
 const STEP_CONFIG = [
   {
-    title: '반가워요!\n이름이 무엇인가요?',
-    subtitle: 'HB Auction에서 사용할 이름을 알려주세요',
-    placeholder: '홍길동',
-    keyboardType: 'default' as const,
-    autoCapitalize: 'words' as const,
+    title: "반가워요!\n이름이 무엇인가요?",
+    subtitle: "HB Auction에서 사용할 이름을 알려주세요",
+    placeholder: "홍길동",
+    keyboardType: "default" as const,
+    autoCapitalize: "words" as const,
     secureTextEntry: false,
     hasEye: false,
   },
   {
-    title: '이메일을\n입력해주세요',
-    subtitle: '로그인에 사용할 이메일이에요',
-    placeholder: 'example@email.com',
-    keyboardType: 'email-address' as const,
-    autoCapitalize: 'none' as const,
+    title: "이메일을\n입력해주세요",
+    subtitle: "로그인에 사용할 이메일이에요",
+    placeholder: "example@email.com",
+    keyboardType: "email-address" as const,
+    autoCapitalize: "none" as const,
     secureTextEntry: false,
     hasEye: false,
   },
   {
-    title: '비밀번호를\n설정해주세요',
-    subtitle: '영문, 숫자 포함 6자 이상',
-    placeholder: '비밀번호 입력',
-    keyboardType: 'default' as const,
-    autoCapitalize: 'none' as const,
+    title: "비밀번호를\n설정해주세요",
+    subtitle: "영문, 숫자 포함 6자 이상",
+    placeholder: "비밀번호 입력",
+    keyboardType: "default" as const,
+    autoCapitalize: "none" as const,
     secureTextEntry: true,
     hasEye: true,
   },
   {
-    title: '비밀번호를\n한 번 더 확인할게요',
-    subtitle: '동일한 비밀번호를 입력해주세요',
-    placeholder: '비밀번호 재입력',
-    keyboardType: 'default' as const,
-    autoCapitalize: 'none' as const,
+    title: "비밀번호를\n한 번 더 확인할게요",
+    subtitle: "동일한 비밀번호를 입력해주세요",
+    placeholder: "비밀번호 재입력",
+    keyboardType: "default" as const,
+    autoCapitalize: "none" as const,
     secureTextEntry: true,
     hasEye: true,
   },
-]
+];
 
 export default function SignupScreen() {
-  const theme = useTheme()
+  const theme = useTheme();
 
-  const [step, setStep] = useState(0)
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [localError, setLocalError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
+  const [step, setStep] = useState(0);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const inputRef = useRef<TextInput>(null)
+  const inputRef = useRef<TextInput>(null);
 
-  const signup = useAuthStore((s) => s.signup)
-  const isLoading = useAuthStore((s) => s.isLoading)
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-  const storeError = useAuthStore((s) => s.error)
-  const clearError = useAuthStore((s) => s.clearError)
+  const signup = useAuthStore((s) => s.signup);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const storeError = useAuthStore((s) => s.error);
+  const clearError = useAuthStore((s) => s.clearError);
 
-  const progress = useSharedValue(0)
+  const progress = useSharedValue(0);
 
-  const values = [name, email, password, confirmPassword]
-  const setters = [setName, setEmail, setPassword, setConfirmPassword]
+  const values = [name, email, password, confirmPassword];
+  const setters = [setName, setEmail, setPassword, setConfirmPassword];
 
   useEffect(() => {
     if (isLoggedIn) {
-      router.replace('/(tabs)')
+      router.replace("/(tabs)");
     }
-  }, [isLoggedIn])
+  }, [isLoggedIn]);
 
   useEffect(() => {
-    progress.set(withSpring((step + 1) / TOTAL_STEPS, { damping: 20, stiffness: 90 }))
-  }, [step])
+    progress.set(
+      withSpring((step + 1) / TOTAL_STEPS, { damping: 20, stiffness: 90 }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      inputRef.current?.focus()
-    }, 350)
-    return () => clearTimeout(timer)
-  }, [step])
+      inputRef.current?.focus();
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [step]);
 
   const progressStyle = useAnimatedStyle(() => ({
     transform: [{ scaleX: progress.get() }],
-  }))
+  }));
 
   const validateAndNext = () => {
-    setLocalError(null)
-    clearError()
+    setLocalError(null);
+    clearError();
 
     switch (step) {
       case 0:
         if (name.trim().length === 0) {
-          setLocalError('이름을 입력해주세요.')
-          return
+          setLocalError("이름을 입력해주세요.");
+          return;
         }
-        break
+        break;
       case 1:
         if (!EMAIL_REGEX.test(email)) {
-          setLocalError('올바른 이메일 형식을 입력해주세요.')
-          return
+          setLocalError("올바른 이메일 형식을 입력해주세요.");
+          return;
         }
-        break
+        break;
       case 2:
         if (password.length < 6) {
-          setLocalError('비밀번호는 6자 이상이어야 합니다.')
-          return
+          setLocalError("비밀번호는 6자 이상이어야 합니다.");
+          return;
         }
-        break
+        break;
       case 3:
         if (password !== confirmPassword) {
-          setLocalError('비밀번호가 일치하지 않습니다.')
-          return
+          setLocalError("비밀번호가 일치하지 않습니다.");
+          return;
         }
-        handleSignup()
-        return
+        handleSignup();
+        return;
     }
 
-    setStep((prev) => prev + 1)
-  }
+    setStep((prev) => prev + 1);
+  };
 
   const handleBack = () => {
     if (step > 0) {
-      setLocalError(null)
-      setStep((prev) => prev - 1)
+      setLocalError(null);
+      setStep((prev) => prev - 1);
     } else {
-      router.back()
+      router.back();
     }
-  }
+  };
 
   const handleSignup = async () => {
-    setLocalError(null)
-    clearError()
-    await signup(name.trim(), email, password)
-  }
+    setLocalError(null);
+    clearError();
+    await signup(name.trim(), email, password);
+  };
 
-  const displayError = localError ?? storeError
-  const current = STEP_CONFIG[step]
-  const currentValue = values[step]
-  const currentSetter = setters[step]
-  const isLastStep = step === TOTAL_STEPS - 1
-  const hasValue = currentValue.trim().length > 0
-  const isSecure = current.secureTextEntry && !showPassword
+  const displayError = localError ?? storeError;
+  const current = STEP_CONFIG[step];
+  const currentValue = values[step];
+  const currentSetter = setters[step];
+  const isLastStep = step === TOTAL_STEPS - 1;
+  const hasValue = currentValue.trim().length > 0;
+  const isSecure = current.secureTextEntry && !showPassword;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg.base }]} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.bg.base }]}
+      edges={["top", "bottom"]}
+    >
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.navBar}>
-          <Pressable onPress={handleBack} hitSlop={12} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color={theme.text.primary} />
+          <Pressable
+            onPress={handleBack}
+            hitSlop={12}
+            style={styles.backButton}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={theme.text.primary}
+            />
           </Pressable>
         </View>
 
-        <View style={[styles.progressTrack, { backgroundColor: theme.border.default }]}>
-          <Animated.View style={[styles.progressFill, { backgroundColor: theme.brand.primary }, progressStyle]} />
+        <View
+          style={[
+            styles.progressTrack,
+            { backgroundColor: theme.border.default },
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.progressFill,
+              { backgroundColor: theme.brand.primary },
+              progressStyle,
+            ]}
+          />
         </View>
 
         <View style={styles.body}>
@@ -191,24 +216,35 @@ export default function SignupScreen() {
             exiting={FadeOutUp.duration(200)}
             style={styles.stepContent}
           >
-            <Text style={[styles.stepTitle, { color: theme.text.primary }]}>{current.title}</Text>
-            <Text style={[styles.stepSubtitle, { color: theme.text.secondary }]}>{current.subtitle}</Text>
+            <Text style={[styles.stepTitle, { color: theme.text.primary }]}>
+              {current.title}
+            </Text>
+            <Text
+              style={[styles.stepSubtitle, { color: theme.text.secondary }]}
+            >
+              {current.subtitle}
+            </Text>
 
-            <View style={[styles.inputContainer, { borderBottomColor: theme.border.default }]}>
+            <View
+              style={[
+                styles.inputContainer,
+                { borderBottomColor: theme.border.default },
+              ]}
+            >
               <TextInput
                 ref={inputRef}
                 style={[styles.input, { color: theme.text.primary }]}
                 value={currentValue}
                 onChangeText={(text) => {
-                  setLocalError(null)
-                  currentSetter(text)
+                  setLocalError(null);
+                  currentSetter(text);
                 }}
                 placeholder={current.placeholder}
                 placeholderTextColor={theme.text.tertiary}
                 keyboardType={current.keyboardType}
                 autoCapitalize={current.autoCapitalize}
                 secureTextEntry={isSecure}
-                returnKeyType={isLastStep ? 'done' : 'next'}
+                returnKeyType={isLastStep ? "done" : "next"}
                 onSubmitEditing={validateAndNext}
                 autoCorrect={false}
                 selectionColor={theme.brand.primary}
@@ -222,7 +258,7 @@ export default function SignupScreen() {
                   hitSlop={12}
                 >
                   <Ionicons
-                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    name={showPassword ? "eye-outline" : "eye-off-outline"}
                     size={22}
                     color={theme.text.tertiary}
                   />
@@ -235,8 +271,16 @@ export default function SignupScreen() {
                 entering={FadeInDown.duration(250)}
                 style={styles.errorRow}
               >
-                <Ionicons name="alert-circle" size={16} color={theme.status.danger} />
-                <Text style={[styles.errorText, { color: theme.status.danger }]}>{displayError}</Text>
+                <Ionicons
+                  name="alert-circle"
+                  size={16}
+                  color={theme.status.danger}
+                />
+                <Text
+                  style={[styles.errorText, { color: theme.status.danger }]}
+                >
+                  {displayError}
+                </Text>
               </Animated.View>
             ) : null}
           </Animated.View>
@@ -245,9 +289,15 @@ export default function SignupScreen() {
         <View style={styles.bottomArea}>
           {step === 0 ? (
             <View style={styles.loginRow}>
-              <Text style={[styles.loginText, { color: theme.text.secondary }]}>이미 계정이 있으신가요? </Text>
+              <Text style={[styles.loginText, { color: theme.text.secondary }]}>
+                이미 계정이 있으신가요?{" "}
+              </Text>
               <Pressable onPress={() => router.back()} hitSlop={8}>
-                <Text style={[styles.loginLink, { color: theme.brand.primary }]}>로그인</Text>
+                <Text
+                  style={[styles.loginLink, { color: theme.brand.primary }]}
+                >
+                  로그인
+                </Text>
               </Pressable>
             </View>
           ) : null}
@@ -256,7 +306,9 @@ export default function SignupScreen() {
             style={[
               styles.nextButton,
               { backgroundColor: theme.brand.primary },
-              hasValue && !isLoading ? null : { backgroundColor: theme.bg.sunken },
+              hasValue && !isLoading
+                ? null
+                : { backgroundColor: theme.bg.sunken },
             ]}
             onPress={validateAndNext}
             disabled={!hasValue || isLoading}
@@ -268,16 +320,20 @@ export default function SignupScreen() {
                 hasValue && !isLoading ? null : { color: theme.text.tertiary },
               ]}
             >
-              {isLoading ? '가입 중...' : isLastStep ? '가입 완료' : '다음'}
+              {isLoading ? "가입 중..." : isLastStep ? "가입 완료" : "다음"}
             </Text>
             {!isLastStep && !isLoading ? (
-              <Ionicons name="arrow-forward" size={20} color={theme.brand.onPrimary} />
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color={theme.brand.onPrimary}
+              />
             ) : null}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -288,28 +344,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   navBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: Spacing.page,
     height: 48,
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   progressTrack: {
     height: 2,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
     right: 0,
-    transformOrigin: 'left',
+    transformOrigin: "left",
   },
   body: {
     flex: 1,
@@ -331,8 +387,8 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderBottomWidth: 2,
     paddingBottom: Spacing.xl,
   },
@@ -347,8 +403,8 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.md,
   },
   errorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
     marginTop: Spacing.xl,
   },
@@ -362,9 +418,9 @@ const styles = StyleSheet.create({
     gap: Spacing.xxl,
   },
   loginRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
   loginText: {
     fontSize: FontSize.sm,
@@ -377,13 +433,13 @@ const styles = StyleSheet.create({
   nextButton: {
     borderRadius: Radius.full,
     height: 56,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: Spacing.md,
   },
   nextButtonText: {
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
   },
-})
+});

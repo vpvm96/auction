@@ -12,62 +12,75 @@
  *
  * outline 모드를 추가로 지원 (배경 없이 테두리만).
  */
-import { StyleSheet, Text, View } from 'react-native'
-import { useTheme } from '@/hooks/useTheme'
-import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
+import { useTheme } from "@/hooks/useTheme";
+import { StyleSheet, Text, View } from "react-native";
 
 export type BadgeVariant =
-  | 'primary'
-  | 'danger'
-  | 'success'
-  | 'warning'
-  | 'neutral'
-  | 'hot'
-  | 'upcoming'
+  | "primary"
+  | "danger"
+  | "success"
+  | "warning"
+  | "neutral"
+  | "hot"
+  | "upcoming";
 
 interface BadgeProps {
-  label: string
-  variant?: BadgeVariant
-  outline?: boolean
+  label: string;
+  variant?: BadgeVariant;
+  outline?: boolean;
 }
 
-export function Badge({ label, variant = 'primary', outline = false }: BadgeProps) {
-  const theme = useTheme()
+export function Badge({
+  label,
+  variant = "primary",
+  outline = false,
+}: BadgeProps) {
+  const theme = useTheme();
 
-  const { bg, text } = variantColors(theme, variant)
+  const { bg, text } = variantColors(theme, variant);
+
+  const accessibilityLabel =
+    `${label} ${variant === "primary" ? "" : `(${variant})`}`.trim();
 
   return (
     <View
+      accessible={true}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="text"
       style={[
         styles.base,
         {
-          backgroundColor: outline ? 'transparent' : bg,
+          backgroundColor: outline ? "transparent" : bg,
           borderWidth: outline ? 1 : 0,
-          borderColor: outline ? text : 'transparent',
+          borderColor: outline ? text : "transparent",
         },
       ]}
     >
       <Text style={[styles.text, { color: text }]}>{label}</Text>
     </View>
-  )
+  );
 }
 
-function variantColors(theme: ReturnType<typeof useTheme>, variant: BadgeVariant) {
+function variantColors(
+  theme: ReturnType<typeof useTheme>,
+  variant: BadgeVariant,
+) {
   switch (variant) {
-    case 'primary':
-      return { bg: theme.brand.primaryLight, text: theme.text.brand }
-    case 'danger':
-      return { bg: theme.status.dangerBg, text: theme.status.danger }
-    case 'success':
-      return { bg: theme.status.successBg, text: theme.status.success }
-    case 'warning':
-      return { bg: theme.status.warningBg, text: theme.status.warning }
-    case 'neutral':
-      return { bg: theme.bg.sunken, text: theme.text.secondary }
-    case 'hot':
-      return { bg: theme.auction.hotBg, text: theme.auction.hot }
-    case 'upcoming':
-      return { bg: theme.auction.upcomingBg, text: theme.auction.upcoming }
+    case "primary":
+      return { bg: theme.brand.primaryLight, text: theme.text.brand };
+    case "danger":
+      return { bg: theme.status.dangerBg, text: theme.status.danger };
+    case "success":
+      return { bg: theme.status.successBg, text: theme.status.success };
+    case "warning":
+      return { bg: theme.status.warningBg, text: theme.status.warning };
+    case "neutral":
+      return { bg: theme.bg.sunken, text: theme.text.secondary };
+    case "hot":
+      return { bg: theme.auction.hotBg, text: theme.auction.hot };
+    case "upcoming":
+      return { bg: theme.auction.upcomingBg, text: theme.auction.upcoming };
   }
 }
 
@@ -76,10 +89,10 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xxs,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   text: {
     fontSize: FontSize.xs,
     fontFamily: FontFamily.bold,
   },
-})
+});

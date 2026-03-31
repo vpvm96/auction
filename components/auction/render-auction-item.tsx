@@ -1,13 +1,16 @@
-import { AuctionCard } from '@/components/auction/auction-card'
-import type { AuctionItem } from '@/lib/mock-data'
+import { AuctionCard } from "@/components/auction/auction-card";
+import type { AuctionItem } from "@/lib/mock-data";
 
 interface RenderAuctionItemDeps {
-  favoriteIds: Set<string>
-  toggleFavorite: (id: string) => void
+  favoriteIds: Set<string>;
+  toggleFavorite: (id: string) => void;
 }
 
-export function createAuctionRenderItem({ favoriteIds, toggleFavorite }: RenderAuctionItemDeps) {
-  return ({ item }: { item: AuctionItem }) => (
+export function createAuctionRenderItem({
+  favoriteIds,
+  toggleFavorite,
+}: RenderAuctionItemDeps) {
+  const renderItem = ({ item }: { item: AuctionItem }) => (
     <AuctionCard
       id={item.id}
       type={item.type}
@@ -23,5 +26,7 @@ export function createAuctionRenderItem({ favoriteIds, toggleFavorite }: RenderA
       isFavorited={favoriteIds.has(item.id)}
       onToggleFavorite={toggleFavorite}
     />
-  )
+  );
+  renderItem.displayName = "AuctionRenderItem";
+  return renderItem;
 }

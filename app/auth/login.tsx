@@ -7,14 +7,14 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -49,7 +49,10 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg.base }]} edges={["top", "bottom"]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.bg.base }]}
+      edges={["top", "bottom"]}
+    >
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -65,8 +68,20 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.form}>
-            <View style={[styles.inputWrapper, { backgroundColor: theme.bg.surface, borderColor: theme.border.default }]}>
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: theme.bg.surface,
+                  borderColor: theme.border.default,
+                },
+              ]}
+            >
               <TextInput
+                accessible={true}
+                accessibilityLabel="이메일 또는 전화번호"
+                accessibilityRole="adjustable"
+                accessibilityHint="로그인할 이메일 또는 전화번호를 입력하세요"
                 style={[styles.input, { color: theme.text.primary }]}
                 value={email}
                 onChangeText={setEmail}
@@ -81,8 +96,21 @@ export default function LoginScreen() {
               />
             </View>
 
-            <View style={[styles.inputWrapper, { backgroundColor: theme.bg.surface, borderColor: theme.border.default }]}>
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: theme.bg.surface,
+                  borderColor: theme.border.default,
+                },
+              ]}
+            >
               <TextInput
+                accessible={true}
+                accessibilityLabel="비밀번호"
+                accessibilityRole="adjustable"
+                accessibilityState={{ secret: true }}
+                accessibilityHint="로그인할 비밀번호를 입력하세요"
                 style={[styles.input, { color: theme.text.primary }]}
                 value={password}
                 onChangeText={setPassword}
@@ -96,6 +124,12 @@ export default function LoginScreen() {
                 underlineColorAndroid="transparent"
               />
               <Pressable
+                accessible={true}
+                accessibilityLabel={
+                  showPassword ? "비밀번호 숨기기" : "비밀번호 보기"
+                }
+                accessibilityRole="button"
+                accessibilityState={{ checked: showPassword }}
                 onPress={() => setShowPassword((prev) => !prev)}
                 hitSlop={8}
               >
@@ -108,17 +142,33 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {error != null ? <Text style={[styles.errorText, { color: theme.status.danger }]}>{error}</Text> : null}
+          {error != null ? (
+            <Text style={[styles.errorText, { color: theme.status.danger }]}>
+              {error}
+            </Text>
+          ) : null}
 
           <Pressable
+            accessible={true}
+            accessibilityLabel="비밀번호 찾기"
+            accessibilityRole="button"
             style={styles.forgotLink}
             onPress={() => router.push("/auth/forgot-password")}
             hitSlop={8}
           >
-            <Text style={[styles.forgotText, { color: theme.brand.primary }]}>비밀번호를 잊으셨나요?</Text>
+            <Text style={[styles.forgotText, { color: theme.brand.primary }]}>
+              비밀번호를 잊으셨나요?
+            </Text>
           </Pressable>
 
           <Pressable
+            accessible={true}
+            accessibilityLabel="로그인"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isLoading }}
+            accessibilityHint={
+              isLoading ? "로그인 중입니다" : "이메일과 비밀번호로 로그인합니다"
+            }
             style={[
               styles.loginButton,
               { backgroundColor: theme.brand.primary },
@@ -127,15 +177,29 @@ export default function LoginScreen() {
             onPress={handleLogin}
             disabled={isLoading}
           >
-            <Text style={[styles.loginButtonText, { color: theme.brand.onPrimary }]}>
+            <Text
+              style={[styles.loginButtonText, { color: theme.brand.onPrimary }]}
+            >
               {isLoading ? "로그인 중..." : "로그인"}
             </Text>
           </Pressable>
 
           <View style={styles.dividerRow}>
-            <View style={[styles.dividerLine, { backgroundColor: theme.border.default }]} />
-            <Text style={[styles.dividerText, { color: theme.text.tertiary }]}>Or Login with</Text>
-            <View style={[styles.dividerLine, { backgroundColor: theme.border.default }]} />
+            <View
+              style={[
+                styles.dividerLine,
+                { backgroundColor: theme.border.default },
+              ]}
+            />
+            <Text style={[styles.dividerText, { color: theme.text.tertiary }]}>
+              Or Login with
+            </Text>
+            <View
+              style={[
+                styles.dividerLine,
+                { backgroundColor: theme.border.default },
+              ]}
+            />
           </View>
 
           <View style={styles.socialRow}>
@@ -162,9 +226,13 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.signupRow}>
-            <Text style={[styles.signupText, { color: theme.text.secondary }]}>HB Auction이 처음이신가요? </Text>
+            <Text style={[styles.signupText, { color: theme.text.secondary }]}>
+              HB Auction이 처음이신가요?{" "}
+            </Text>
             <Pressable onPress={() => router.push("/auth/signup")} hitSlop={8}>
-              <Text style={[styles.signupLink, { color: theme.brand.primary }]}>Sign up</Text>
+              <Text style={[styles.signupLink, { color: theme.brand.primary }]}>
+                Sign up
+              </Text>
             </Pressable>
           </View>
         </ScrollView>

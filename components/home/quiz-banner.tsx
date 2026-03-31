@@ -1,33 +1,79 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native'
-import { FontFamily, FontSize, LineHeight, Radius, Spacing } from '@/constants/tokens'
-import { useTheme } from '@/hooks/useTheme'
+import {
+    FontFamily,
+    FontSize,
+    LineHeight,
+    Radius,
+    Spacing,
+} from "@/constants/tokens";
+import { useTheme } from "@/hooks/useTheme";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export function QuizBanner() {
-  const theme = useTheme()
+  const theme = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.brand.primarySubtle }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.brand.primarySubtle }]}
+    >
       <View style={styles.content}>
         <View style={styles.textArea}>
-          <Text style={[styles.subtitle, { color: theme.brand.primary }]}>오늘의 경매퀴즈</Text>
-          <Text style={[styles.title, { color: theme.text.primary }]}>
-            {'퀴즈 풀고\n경매 지식 쌓고!'}
+          <Text style={[styles.subtitle, { color: theme.brand.primary }]}>
+            오늘의 경매퀴즈
           </Text>
-          <Pressable style={[styles.button, { backgroundColor: theme.brand.primary }]}>
-            <Text style={[styles.buttonText, { color: theme.brand.onPrimary }]}>퀴즈 풀러가기</Text>
+          <Text style={[styles.title, { color: theme.text.primary }]}>
+            {"퀴즈 풀고\n경매 지식 쌓고!"}
+          </Text>
+          <Pressable
+            accessible={true}
+            accessibilityLabel="퀴즈 풀러가기"
+            accessibilityRole="button"
+            style={[styles.button, { backgroundColor: theme.brand.primary }]}
+          >
+            <Text style={[styles.buttonText, { color: theme.brand.onPrimary }]}>
+              퀴즈 풀러가기
+            </Text>
           </Pressable>
         </View>
         <View style={styles.decorArea}>
-          <View style={[styles.quizCard, { backgroundColor: theme.bg.elevated }, theme.shadow.md]}>
-            <Text style={[styles.quizCardLabel, { color: theme.text.secondary }]}>Q.문제</Text>
-            <Text style={[styles.quizCardText, { color: theme.text.primary }]}>
-              {'법률상 의무를 강제할 수 있는\n관계를 뜻하는 말은?'}
+          <View
+            style={[
+              styles.quizCard,
+              { backgroundColor: theme.bg.elevated },
+              theme.shadow.md,
+            ]}
+          >
+            <Text
+              style={[styles.quizCardLabel, { color: theme.text.secondary }]}
+            >
+              Q.문제
             </Text>
-            <View style={[styles.quizOption, { backgroundColor: theme.border.default }]}>
-              <Text style={[styles.quizOptionText, { color: theme.text.secondary }]}>채무관계</Text>
+            <Text style={[styles.quizCardText, { color: theme.text.primary }]}>
+              {"법률상 의무를 강제할 수 있는\n관계를 뜻하는 말은?"}
+            </Text>
+            <View
+              style={[
+                styles.quizOption,
+                { backgroundColor: theme.border.default },
+              ]}
+            >
+              <Text
+                style={[styles.quizOptionText, { color: theme.text.secondary }]}
+              >
+                채무관계
+              </Text>
             </View>
-            <View style={[styles.quizOption, { backgroundColor: theme.status.success }]}>
-              <Text style={[styles.quizOptionText, { color: '#FFFFFF', fontFamily: FontFamily.bold }]}>
+            <View
+              style={[
+                styles.quizOption,
+                { backgroundColor: theme.status.success },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.quizOptionText,
+                  { color: "#FFFFFF", fontFamily: FontFamily.bold },
+                ]}
+              >
                 권리관계
               </Text>
             </View>
@@ -35,7 +81,7 @@ export function QuizBanner() {
         </View>
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -43,12 +89,12 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xl,
     marginHorizontal: Spacing.page,
     marginBottom: Spacing.xl,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   content: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: Spacing.xxxl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   textArea: {
     flex: 1,
@@ -67,7 +113,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.xxl,
     paddingVertical: Spacing.lg,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginTop: Spacing.xs,
   },
   buttonText: {
@@ -76,7 +122,7 @@ const styles = StyleSheet.create({
   },
   decorArea: {
     width: 140,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   quizCard: {
     borderRadius: Radius.lg,
@@ -101,6 +147,6 @@ const styles = StyleSheet.create({
   quizOptionText: {
     fontSize: FontSize.xs,
     fontFamily: FontFamily.medium,
-    textAlign: 'center',
+    textAlign: "center",
   },
-})
+});

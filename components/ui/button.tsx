@@ -1,68 +1,85 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, type ViewStyle } from 'react-native'
-import { useTheme } from '@/hooks/useTheme'
-import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
+import { useTheme } from "@/hooks/useTheme";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  type ViewStyle,
+} from "react-native";
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
-export type ButtonSize = 'sm' | 'md' | 'lg'
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "outline"
+  | "ghost"
+  | "danger";
+export type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps {
-  label: string
-  onPress?: () => void
-  variant?: ButtonVariant
-  size?: ButtonSize
-  loading?: boolean
-  disabled?: boolean
-  fullWidth?: boolean
-  style?: ViewStyle
+  label: string;
+  onPress?: () => void;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  loading?: boolean;
+  disabled?: boolean;
+  fullWidth?: boolean;
+  style?: ViewStyle;
 }
 
 export function Button({
   label,
   onPress,
-  variant = 'primary',
-  size = 'md',
+  variant = "primary",
+  size = "md",
   loading = false,
   disabled = false,
   fullWidth = false,
   style,
 }: ButtonProps) {
-  const theme = useTheme()
+  const theme = useTheme();
 
-  const isDisabled = disabled || loading
+  const isDisabled = disabled || loading;
 
   const bgColor =
-    variant === 'primary'
+    variant === "primary"
       ? theme.brand.primary
-      : variant === 'secondary'
+      : variant === "secondary"
         ? theme.brand.primaryLight
-        : variant === 'danger'
+        : variant === "danger"
           ? theme.status.dangerBg
-          : 'transparent'
+          : "transparent";
 
   const textColor =
-    variant === 'primary'
+    variant === "primary"
       ? theme.brand.onPrimary
-      : variant === 'secondary'
+      : variant === "secondary"
         ? theme.text.brand
-        : variant === 'outline'
+        : variant === "outline"
           ? theme.text.brand
-          : variant === 'ghost'
+          : variant === "ghost"
             ? theme.text.secondary
-            : variant === 'danger'
+            : variant === "danger"
               ? theme.status.danger
-              : theme.text.primary
+              : theme.text.primary;
 
   return (
     <Pressable
+      accessible={true}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled }}
+      accessibilityHint={loading ? "로딩 중입니다" : undefined}
       style={[
         styles.base,
         sizeContainerStyles[size],
         {
           backgroundColor: bgColor,
-          borderWidth: variant === 'outline' ? 1.5 : 0,
-          borderColor: variant === 'outline' ? theme.brand.primary : 'transparent',
+          borderWidth: variant === "outline" ? 1.5 : 0,
+          borderColor:
+            variant === "outline" ? theme.brand.primary : "transparent",
           opacity: isDisabled ? 0.5 : 1,
-          alignSelf: fullWidth ? ('stretch' as const) : ('flex-start' as const),
+          alignSelf: fullWidth ? ("stretch" as const) : ("flex-start" as const),
         },
         style,
       ]}
@@ -72,23 +89,27 @@ export function Button({
       {loading ? (
         <ActivityIndicator size="small" color={textColor} />
       ) : (
-        <Text style={[styles.label, sizeLabelStyles[size], { color: textColor }]}>{label}</Text>
+        <Text
+          style={[styles.label, sizeLabelStyles[size], { color: textColor }]}
+        >
+          {label}
+        </Text>
       )}
     </Pressable>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   base: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: Radius.lg,
   },
   label: {
     fontFamily: FontFamily.semibold,
   },
-})
+});
 
 const sizeContainerStyles = StyleSheet.create({
   sm: {
@@ -109,10 +130,10 @@ const sizeContainerStyles = StyleSheet.create({
     borderRadius: Radius.xl,
     minHeight: 52,
   },
-})
+});
 
 const sizeLabelStyles = StyleSheet.create({
   sm: { fontSize: FontSize.sm },
   md: { fontSize: FontSize.base },
   lg: { fontSize: FontSize.lg },
-})
+});

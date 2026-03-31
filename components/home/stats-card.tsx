@@ -1,28 +1,42 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
-import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
-import { useTheme } from '@/hooks/useTheme'
-import { router } from 'expo-router'
+import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
+import { useTheme } from "@/hooks/useTheme";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 interface StatItemProps {
-  icon: React.ComponentProps<typeof Ionicons>['name']
-  label: string
-  count: number
-  change: number
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  count: number;
+  change: number;
   /** 전체 건수 중 비중 (0~1), 시각적 바 렌더링용 */
-  ratio: number
-  accentColor: string
-  accentBg: string
+  ratio: number;
+  accentColor: string;
+  accentBg: string;
 }
 
-function StatItem({ icon, label, count, change, ratio, accentColor, accentBg }: StatItemProps) {
-  const theme = useTheme()
-  const isIncrease = change > 0
-  const changeColor = isIncrease ? theme.auction.hot : theme.status.info
-  const changeBg = isIncrease ? theme.auction.hotBg : theme.status.infoBg
+function StatItem({
+  icon,
+  label,
+  count,
+  change,
+  ratio,
+  accentColor,
+  accentBg,
+}: StatItemProps) {
+  const theme = useTheme();
+  const isIncrease = change > 0;
+  const changeColor = isIncrease ? theme.auction.hot : theme.status.info;
+  const changeBg = isIncrease ? theme.auction.hotBg : theme.status.infoBg;
 
   return (
-    <View style={styles.statItem}>
+    <View
+      accessible={true}
+      accessibilityLabel={label}
+      accessibilityRole="text"
+      accessibilityHint={`${count.toLocaleString()}건, 변화량 ${Math.abs(change).toLocaleString()}건 ${isIncrease ? "증가" : "감소"}`}
+      style={styles.statItem}
+    >
       {/* 아이콘 + 레이블 */}
       <View style={[styles.iconBox, { backgroundColor: accentBg }]}>
         <Ionicons name={icon} size={20} color={accentColor} />
@@ -30,10 +44,12 @@ function StatItem({ icon, label, count, change, ratio, accentColor, accentBg }: 
 
       <View style={styles.statBody}>
         <View style={styles.statTopRow}>
-          <Text style={[styles.statLabel, { color: theme.text.secondary }]}>{label}</Text>
+          <Text style={[styles.statLabel, { color: theme.text.secondary }]}>
+            {label}
+          </Text>
           <View style={[styles.changeChip, { backgroundColor: changeBg }]}>
             <Ionicons
-              name={isIncrease ? 'caret-up' : 'caret-down'}
+              name={isIncrease ? "caret-up" : "caret-down"}
               size={10}
               color={changeColor}
             />
@@ -45,28 +61,36 @@ function StatItem({ icon, label, count, change, ratio, accentColor, accentBg }: 
 
         <Text style={[styles.statCount, { color: theme.text.primary }]}>
           {count.toLocaleString()}
-          <Text style={[styles.statUnit, { color: theme.text.tertiary }]}> 건</Text>
+          <Text style={[styles.statUnit, { color: theme.text.tertiary }]}>
+            {" "}
+            건
+          </Text>
         </Text>
 
         {/* 상대 비율 바 */}
         <View style={[styles.barTrack, { backgroundColor: theme.bg.sunken }]}>
-          <View style={[styles.barFill, { width: `${ratio * 100}%`, backgroundColor: accentColor }]} />
+          <View
+            style={[
+              styles.barFill,
+              { width: `${ratio * 100}%`, backgroundColor: accentColor },
+            ]}
+          />
         </View>
       </View>
     </View>
-  )
+  );
 }
 
 interface StatsCardProps {
-  realEstate: { count: number; change: number }
-  personal: { count: number; change: number }
+  realEstate: { count: number; change: number };
+  personal: { count: number; change: number };
 }
 
 export function StatsCard({ realEstate, personal }: StatsCardProps) {
-  const theme = useTheme()
-  const total = realEstate.count + personal.count
-  const realEstateRatio = total > 0 ? realEstate.count / total : 0.5
-  const personalRatio = total > 0 ? personal.count / total : 0.5
+  const theme = useTheme();
+  const total = realEstate.count + personal.count;
+  const realEstateRatio = total > 0 ? realEstate.count / total : 0.5;
+  const personalRatio = total > 0 ? personal.count / total : 0.5;
 
   return (
     <View
@@ -79,8 +103,12 @@ export function StatsCard({ realEstate, personal }: StatsCardProps) {
       ]}
     >
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text.secondary }]}>경매 현황</Text>
-        <Text style={[styles.headerSub, { color: theme.text.tertiary }]}>최근 1주일</Text>
+        <Text style={[styles.headerTitle, { color: theme.text.secondary }]}>
+          경매 현황
+        </Text>
+        <Text style={[styles.headerSub, { color: theme.text.tertiary }]}>
+          최근 1주일
+        </Text>
       </View>
 
       <View style={styles.statsRow}>
@@ -93,7 +121,12 @@ export function StatsCard({ realEstate, personal }: StatsCardProps) {
           accentColor={theme.brand.primary}
           accentBg={theme.brand.primaryLight}
         />
-        <View style={[styles.verticalDivider, { backgroundColor: theme.border.subtle }]} />
+        <View
+          style={[
+            styles.verticalDivider,
+            { backgroundColor: theme.border.subtle },
+          ]}
+        />
         <StatItem
           icon="car-outline"
           label="동산"
@@ -105,12 +138,20 @@ export function StatsCard({ realEstate, personal }: StatsCardProps) {
         />
       </View>
 
-      <Pressable style={[styles.footer, { borderTopColor: theme.border.default }]} onPress={() => router.push('/(tabs)/list')}>
-        <Text style={[styles.footerText, { color: theme.text.brand }]}>상세 통계 보기</Text>
+      <Pressable
+        accessible={true}
+        accessibilityLabel="상세 통계 보기"
+        accessibilityRole="button"
+        style={[styles.footer, { borderTopColor: theme.border.default }]}
+        onPress={() => router.push("/(tabs)/list")}
+      >
+        <Text style={[styles.footerText, { color: theme.text.brand }]}>
+          상세 통계 보기
+        </Text>
         <Ionicons name="arrow-forward" size={13} color={theme.text.brand} />
       </Pressable>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -119,12 +160,12 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.page,
     marginBottom: Spacing.xl,
     borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.xxl,
     paddingTop: Spacing.xxl,
     paddingBottom: Spacing.md,
@@ -138,28 +179,28 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
   },
   statsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: Spacing.xxl,
     paddingBottom: Spacing.xxl,
     gap: Spacing.xxl,
   },
   verticalDivider: {
     width: StyleSheet.hairlineWidth,
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
     marginVertical: Spacing.xs,
   },
   statItem: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.xl,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   iconBox: {
     width: 40,
     height: 40,
     borderRadius: Radius.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 2,
   },
   statBody: {
@@ -167,17 +208,17 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   statTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   statLabel: {
     fontSize: FontSize.sm,
     fontFamily: FontFamily.medium,
   },
   changeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 2,
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing.sm,
@@ -199,17 +240,17 @@ const styles = StyleSheet.create({
   barTrack: {
     height: 4,
     borderRadius: Radius.full,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginTop: Spacing.xs,
   },
   barFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: Radius.full,
   },
   footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
     gap: Spacing.xs,
     paddingHorizontal: Spacing.xxl,
     paddingVertical: Spacing.xl,
@@ -219,4 +260,4 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontFamily: FontFamily.semibold,
   },
-})
+});
