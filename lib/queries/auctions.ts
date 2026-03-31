@@ -17,6 +17,8 @@ export function useAuctions(
       return hasMore ? lastPage.page + 1 : undefined
     },
     enabled: options?.enabled !== false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   })
 }
 

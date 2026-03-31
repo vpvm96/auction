@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, Pressable, ScrollView, ActivityIndicator } from
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
 import { useLocalSearchParams, router } from 'expo-router'
+import { useIsFocused } from '@react-navigation/native'
 import { useState, useEffect, useRef } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '@/constants/colors'
@@ -51,6 +52,7 @@ export default function ListScreen() {
     params.type ?? 'all'
   )
 
+  const isFocused = useIsFocused()
   const filterScrollRef = useRef<ScrollView>(null)
   const tabLayoutsRef = useRef<Record<string, { x: number; width: number }>>({})
 
@@ -95,9 +97,9 @@ export default function ListScreen() {
   }
 
   const handleEndReached = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage()
-    }
+    if (!isFocused) return
+    if (!hasNextPage || isFetchingNextPage) return
+    fetchNextPage()
   }
 
   return (
