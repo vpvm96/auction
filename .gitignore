@@ -18,6 +18,23 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Testing
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+junit-results.xml
+*.lcov
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+
 # Metro
 .metro-health-check*
 

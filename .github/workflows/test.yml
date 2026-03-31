@@ -1,0 +1,125 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+jobs:
+  unit-and-integration-tests:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.6.5
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🧪 Run Jest tests
+        run: pnpm test -- --coverage --testPathPattern='(__tests__/(unit|integration))' 2>&1
+
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: 💬 Comment on PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = require('./coverage/coverage-summary.json');
+            const lines = coverage.total.lines.pct;
+
+            const comment = `## 📊 Test Coverage\n- Line Coverage: **${lines}%**\n\n> Coverage threshold: 80%`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+        continue-on-error: true
+
+      - name: ✅ Check coverage threshold
+        run: |
+          LINE_COVERAGE=$(grep -o '"lines".*"pct":[ ]*[0-9.]*' coverage/coverage-summary.json | grep -o '[0-9.]*$' | tail -1)
+          echo "Line Coverage: ${LINE_COVERAGE}%"
+          if (( $(echo "$LINE_COVERAGE < 80" | bc -l) )); then
+            echo "❌ Coverage below 80%"
+            exit 1
+          fi
+          echo "✅ Coverage meets threshold"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.6.5
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "pnpm"
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Run linter
+        run: pnpm lint
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.6.5
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "pnpm"
+
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ✔️ Run TypeScript type check
+        run: npx tsc --noEmit
