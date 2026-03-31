@@ -1,8 +1,9 @@
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { Image } from 'expo-image'
 import { router } from 'expo-router'
-import { useTheme } from '@/hooks/useTheme'
+import { useTheme, useIsDark } from '@/hooks/useTheme'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { StatsCard } from '@/components/home/stats-card'
 import { CategoryGrid } from '@/components/home/category-grid'
@@ -21,8 +22,12 @@ function getTodayLabel(): string {
   return `${month}월 ${date}일 ${day}요일`
 }
 
+const LOGO_BG_LIGHT = '#F0F0F5'
+const LOGO_BG_DARK = '#2A2A3A'
+
 function Header() {
   const theme = useTheme()
+  const isDark = useIsDark()
   const readIds = useNotificationStore((s) => s.readIds)
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !readIds.has(n.id)).length
   const totalAuctions = MOCK_STATS.realEstate.count + MOCK_STATS.personal.count
@@ -47,8 +52,17 @@ function Header() {
     >
       {/* 로고 + 날짜/건수 */}
       <View style={styles.logoArea}>
-        <View style={[styles.logoIcon, { backgroundColor: theme.brand.primary }]}>
-          <Text style={styles.logoText}>경</Text>
+        <View
+          style={[
+            styles.logoContainer,
+            { backgroundColor: isDark ? LOGO_BG_DARK : LOGO_BG_LIGHT },
+          ]}
+        >
+          <Image
+            source={require('@/assets/images/logo/hb_acution_cutout.png')}
+            style={styles.logoImage}
+            contentFit="contain"
+          />
         </View>
         <View style={styles.logoMeta}>
           <Text style={[styles.logoDate, { color: theme.text.primary }]}>{getTodayLabel()}</Text>
@@ -115,12 +129,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xl,
   },
-  logoIcon: {
-    width: 36,
-    height: 36,
+  logoContainer: {
+    width: 38,
+    height: 38,
     borderRadius: Radius.lg,
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  logoImage: {
+    width: 54,
+    height: 54,
   },
   logoMeta: {
     gap: 1,
@@ -132,11 +151,6 @@ const styles = StyleSheet.create({
   logoCount: {
     fontSize: FontSize.xs,
     fontFamily: FontFamily.bold,
-  },
-  logoText: {
-    fontSize: FontSize.base,
-    fontFamily: FontFamily.extrabold,
-    color: '#FFFFFF',
   },
   iconButton: {
     padding: Spacing.xs,

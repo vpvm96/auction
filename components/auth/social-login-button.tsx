@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Path, G } from 'react-native-svg'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { useTheme, useIsDark } from '@/hooks/useTheme'
+import type { ColorTheme } from '@/constants/theme'
 
 type SocialProvider = 'kakao' | 'naver' | 'apple' | 'google'
 
@@ -13,28 +14,30 @@ interface ProviderConfig {
   borderColor?: string
 }
 
-const PROVIDER_CONFIG: Record<SocialProvider, ProviderConfig> = {
-  kakao: {
-    label: '카카오로 로그인',
-    bgColor: '#FEE500',
-    textColor: '#000000',
-  },
-  naver: {
-    label: '네이버로 로그인',
-    bgColor: '#03C75A',
-    textColor: '#FFFFFF',
-  },
-  apple: {
-    label: 'Apple로 로그인',
-    bgColor: '#000000',
-    textColor: '#FFFFFF',
-  },
-  google: {
-    label: 'Google로 로그인',
-    bgColor: '#FFFFFF',
-    textColor: '#333333',
-    borderColor: Colors.border,
-  },
+function getProviderConfig(isDark: boolean, theme: ColorTheme): Record<SocialProvider, ProviderConfig> {
+  return {
+    kakao: {
+      label: '카카오로 로그인',
+      bgColor: '#FEE500',
+      textColor: '#000000',
+    },
+    naver: {
+      label: '네이버로 로그인',
+      bgColor: '#03C75A',
+      textColor: '#FFFFFF',
+    },
+    apple: {
+      label: 'Apple로 로그인',
+      bgColor: isDark ? '#FFFFFF' : '#000000',
+      textColor: isDark ? '#000000' : '#FFFFFF',
+    },
+    google: {
+      label: 'Google로 로그인',
+      bgColor: isDark ? '#131314' : '#FFFFFF',
+      textColor: isDark ? '#E3E3E3' : '#333333',
+      borderColor: theme.border.default,
+    },
+  }
 }
 
 function KakaoIcon({ size }: { size: number }) {
@@ -104,7 +107,10 @@ interface SocialLoginButtonProps {
 }
 
 export function SocialLoginButton({ provider, onPress, variant = 'full' }: SocialLoginButtonProps) {
-  const config = PROVIDER_CONFIG[provider]
+  const theme = useTheme()
+  const isDark = useIsDark()
+  const providerConfigs = getProviderConfig(isDark, theme)
+  const config = providerConfigs[provider]
 
   if (variant === 'icon') {
     return (

@@ -19,8 +19,8 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { EMAIL_REGEX } from '@/lib/validation'
 
@@ -66,6 +66,8 @@ const STEP_CONFIG = [
 ]
 
 export default function SignupScreen() {
+  const theme = useTheme()
+
   const [step, setStep] = useState(0)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -167,19 +169,19 @@ export default function SignupScreen() {
   const isSecure = current.secureTextEntry && !showPassword
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg.base }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.navBar}>
           <Pressable onPress={handleBack} hitSlop={12} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color={Colors.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={theme.text.primary} />
           </Pressable>
         </View>
 
-        <View style={styles.progressTrack}>
-          <Animated.View style={[styles.progressFill, progressStyle]} />
+        <View style={[styles.progressTrack, { backgroundColor: theme.border.default }]}>
+          <Animated.View style={[styles.progressFill, { backgroundColor: theme.brand.primary }, progressStyle]} />
         </View>
 
         <View style={styles.body}>
@@ -189,27 +191,27 @@ export default function SignupScreen() {
             exiting={FadeOutUp.duration(200)}
             style={styles.stepContent}
           >
-            <Text style={styles.stepTitle}>{current.title}</Text>
-            <Text style={styles.stepSubtitle}>{current.subtitle}</Text>
+            <Text style={[styles.stepTitle, { color: theme.text.primary }]}>{current.title}</Text>
+            <Text style={[styles.stepSubtitle, { color: theme.text.secondary }]}>{current.subtitle}</Text>
 
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, { borderBottomColor: theme.border.default }]}>
               <TextInput
                 ref={inputRef}
-                style={styles.input}
+                style={[styles.input, { color: theme.text.primary }]}
                 value={currentValue}
                 onChangeText={(text) => {
                   setLocalError(null)
                   currentSetter(text)
                 }}
                 placeholder={current.placeholder}
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={theme.text.tertiary}
                 keyboardType={current.keyboardType}
                 autoCapitalize={current.autoCapitalize}
                 secureTextEntry={isSecure}
                 returnKeyType={isLastStep ? 'done' : 'next'}
                 onSubmitEditing={validateAndNext}
                 autoCorrect={false}
-                selectionColor={Colors.primary}
+                selectionColor={theme.brand.primary}
                 underlineColorAndroid="transparent"
               />
 
@@ -222,7 +224,7 @@ export default function SignupScreen() {
                   <Ionicons
                     name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={22}
-                    color={Colors.textTertiary}
+                    color={theme.text.tertiary}
                   />
                 </Pressable>
               ) : null}
@@ -233,8 +235,8 @@ export default function SignupScreen() {
                 entering={FadeInDown.duration(250)}
                 style={styles.errorRow}
               >
-                <Ionicons name="alert-circle" size={16} color={Colors.increase} />
-                <Text style={styles.errorText}>{displayError}</Text>
+                <Ionicons name="alert-circle" size={16} color={theme.status.danger} />
+                <Text style={[styles.errorText, { color: theme.status.danger }]}>{displayError}</Text>
               </Animated.View>
             ) : null}
           </Animated.View>
@@ -243,9 +245,9 @@ export default function SignupScreen() {
         <View style={styles.bottomArea}>
           {step === 0 ? (
             <View style={styles.loginRow}>
-              <Text style={styles.loginText}>이미 계정이 있으신가요? </Text>
+              <Text style={[styles.loginText, { color: theme.text.secondary }]}>이미 계정이 있으신가요? </Text>
               <Pressable onPress={() => router.back()} hitSlop={8}>
-                <Text style={styles.loginLink}>로그인</Text>
+                <Text style={[styles.loginLink, { color: theme.brand.primary }]}>로그인</Text>
               </Pressable>
             </View>
           ) : null}
@@ -253,7 +255,8 @@ export default function SignupScreen() {
           <Pressable
             style={[
               styles.nextButton,
-              hasValue && !isLoading ? null : styles.nextButtonDisabled,
+              { backgroundColor: theme.brand.primary },
+              hasValue && !isLoading ? null : { backgroundColor: theme.bg.sunken },
             ]}
             onPress={validateAndNext}
             disabled={!hasValue || isLoading}
@@ -261,13 +264,14 @@ export default function SignupScreen() {
             <Text
               style={[
                 styles.nextButtonText,
-                hasValue && !isLoading ? null : styles.nextButtonTextDisabled,
+                { color: theme.brand.onPrimary },
+                hasValue && !isLoading ? null : { color: theme.text.tertiary },
               ]}
             >
               {isLoading ? '가입 중...' : isLastStep ? '가입 완료' : '다음'}
             </Text>
             {!isLastStep && !isLoading ? (
-              <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+              <Ionicons name="arrow-forward" size={20} color={theme.brand.onPrimary} />
             ) : null}
           </Pressable>
         </View>
@@ -279,7 +283,6 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
   },
   flex: {
     flex: 1,
@@ -298,7 +301,6 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 2,
-    backgroundColor: Colors.border,
     overflow: 'hidden',
   },
   progressFill: {
@@ -307,7 +309,6 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     right: 0,
-    backgroundColor: Colors.primary,
     transformOrigin: 'left',
   },
   body: {
@@ -321,13 +322,11 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 28,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     lineHeight: 40,
   },
   stepSubtitle: {
     fontSize: FontSize.base,
     fontFamily: FontFamily.regular,
-    color: Colors.textSecondary,
     marginTop: Spacing.lg,
     marginBottom: 40,
   },
@@ -335,14 +334,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 2,
-    borderBottomColor: Colors.border,
     paddingBottom: Spacing.xl,
   },
   input: {
     flex: 1,
     fontSize: 22,
     fontFamily: FontFamily.medium,
-    color: Colors.textPrimary,
     padding: 0,
   },
   eyeButton: {
@@ -357,7 +354,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: FontSize.sm,
-    color: Colors.increase,
     fontFamily: FontFamily.regular,
   },
   bottomArea: {
@@ -372,16 +368,13 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: FontSize.sm,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
   },
   loginLink: {
     fontSize: FontSize.sm,
-    color: Colors.primary,
     fontFamily: FontFamily.bold,
   },
   nextButton: {
-    backgroundColor: Colors.primary,
     borderRadius: Radius.full,
     height: 56,
     flexDirection: 'row',
@@ -389,15 +382,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
   },
-  nextButtonDisabled: {
-    backgroundColor: Colors.background,
-  },
   nextButtonText: {
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
-    color: Colors.white,
-  },
-  nextButtonTextDisabled: {
-    color: Colors.textTertiary,
   },
 })
