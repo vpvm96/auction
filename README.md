@@ -1,50 +1,33 @@
-# Welcome to your Expo app 👋
+# Property Auction
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+부동산 경매 정보를 제공하는 React Native 모바일 앱입니다.
 
-## Get started
+## 기술 스택
 
-1. Install dependencies
+- **Framework**: React Native 0.81 + Expo 54
+- **Router**: expo-router (파일 기반 라우팅)
+- **State**: Zustand
+- **Server State**: TanStack Query (React Query)
+- **Animation**: React Native Reanimated 4
+- **패키지 매니저**: pnpm
 
-   ```bash
-   npm install
-   ```
+## 주요 기능
 
-2. Start the app
+- 경매 목록 조회 및 검색 (지역 필터 포함)
+- 경매 상세 정보
+- 즐겨찾기
+- 최근 본 매물
+- 경매 뉴스
+- 알림 (Expo Push / FCM)
+- 회원가입 / 로그인 / 비밀번호 찾기
+- 마이페이지 (프로필 편집, 설정, 약관 등)
 
-   ```bash
-   npx expo start
-   ```
+## 프로젝트 소개
 
-In the output, you'll find options to open the app in a
+Property Auction은 법원 경매 물건을 한눈에 조회하고 관리할 수 있는 모바일 앱입니다.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+홈 화면에서는 오늘의 경매 통계(부동산·동산 건수)와 날짜별 경매 일정, 카테고리 바로가기를 제공하며, 경매 관련 뉴스 배너와 퀴즈 배너도 함께 노출됩니다.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+경매 목록 화면에서는 아파트·주택·오피스텔·상가·토지·자동차·중기 등 유형별 필터와 법원 지역 필터를 조합해 원하는 물건만 빠르게 찾을 수 있습니다. 최신순·마감순·가격순 정렬도 지원하며, 무한 스크롤로 데이터를 이어서 불러옵니다.
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+즐겨찾기와 최근 본 매물 기능으로 관심 있는 물건을 따로 모아두거나 다시 찾아볼 수 있고, 경매 일정 알림을 통해 입찰 마감 전 푸시 알림을 받을 수 있습니다.
