@@ -11,15 +11,18 @@ export interface NotificationSettings {
 interface NotificationStore {
   readIds: Set<string>
   settings: NotificationSettings
+  expoPushToken: string | null
   markRead: (id: string) => void
   markAllRead: (allIds: string[]) => void
   toggleSetting: (key: keyof NotificationSettings) => void
+  setExpoPushToken: (token: string | null) => void
 }
 
 export const useNotificationStore = create<NotificationStore>()(
   persist(
     (set) => ({
       readIds: new Set(),
+      expoPushToken: null,
       settings: {
         auctionAlerts: true,
         priceAlerts: true,
@@ -36,6 +39,7 @@ export const useNotificationStore = create<NotificationStore>()(
         set((state) => ({
           settings: { ...state.settings, [key]: !state.settings[key] },
         })),
+      setExpoPushToken: (token) => set({ expoPushToken: token }),
     }),
     {
       name: 'notification-storage',

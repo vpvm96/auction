@@ -2,14 +2,28 @@ import "@/global.css";
 import { Colors } from "@/constants/colors";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useNotificationStore } from "@/lib/store/useNotificationStore";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
+import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+// 포그라운드 알림 동작 설정
+// 앱이 켜져 있는 상태에서도 시스템 상단바 배너 알림이 노출되도록 설정
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    priority: Notifications.AndroidNotificationPriority.HIGH,
+  }),
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +63,16 @@ export default function RootLayout() {
     "Pretendard-Bold": require("@/assets/fonts/Pretendard-Bold.otf"),
     "Pretendard-ExtraBold": require("@/assets/fonts/Pretendard-ExtraBold.otf"),
   });
+
+  const { expoPushToken } = usePushNotifications();
+  const setExpoPushToken = useNotificationStore((s) => s.setExpoPushToken);
+
+  // 발급된 Expo Push Token을 Zustand 스토어에 저장
+  useEffect(() => {
+    if (expoPushToken) {
+      setExpoPushToken(expoPushToken);
+    }
+  }, [expoPushToken, setExpoPushToken]);
 
   useEffect(() => {
     if (fontsLoaded) {

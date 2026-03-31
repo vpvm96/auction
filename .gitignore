@@ -55,3 +55,7 @@ CLAUDE.md
 
 # env
 .env
+
+# Firebase config
+GoogleService-Info.plist
+google-services.json
