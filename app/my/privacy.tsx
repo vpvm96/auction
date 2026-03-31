@@ -2,8 +2,8 @@ import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, LineHeight, Spacing } from '@/constants/tokens'
+import { useTheme } from '@/hooks/useTheme'
 
 const SECTIONS = [
   {
@@ -33,24 +33,26 @@ const SECTIONS = [
 ]
 
 export default function PrivacyScreen() {
+  const theme = useTheme()
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.navBar}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
+      <View style={[styles.navBar, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
         </Pressable>
-        <Text style={styles.navTitle}>개인정보처리방침</Text>
+        <Text style={[styles.navTitle, { color: theme.text.primary }]}>개인정보처리방침</Text>
         <View style={styles.navSpacer} />
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.effectiveDate}>
-          <Text style={styles.effectiveDateText}>시행일: 2026년 1월 1일</Text>
+        <View style={[styles.effectiveDate, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
+          <Text style={[styles.effectiveDateText, { color: theme.text.secondary }]}>시행일: 2026년 1월 1일</Text>
         </View>
         {SECTIONS.map((section) => (
-          <View key={section.title} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <Text style={styles.sectionBody}>{section.body}</Text>
+          <View key={section.title} style={[styles.section, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>{section.title}</Text>
+            <Text style={[styles.sectionBody, { color: theme.text.secondary }]}>{section.body}</Text>
           </View>
         ))}
         <View style={styles.footer} />
@@ -62,23 +64,19 @@ export default function PrivacyScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xl,
-    backgroundColor: Colors.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   navTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     marginHorizontal: Spacing.xl,
   },
   navSpacer: {
@@ -90,31 +88,24 @@ const styles = StyleSheet.create({
   effectiveDate: {
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xxl,
-    backgroundColor: Colors.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   effectiveDateText: {
     fontSize: FontSize.sm,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
   },
   section: {
-    backgroundColor: Colors.card,
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xxl,
     gap: Spacing.xl,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   sectionTitle: {
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
   },
   sectionBody: {
     fontSize: FontSize.sm,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
     lineHeight: LineHeight.relaxed,
   },

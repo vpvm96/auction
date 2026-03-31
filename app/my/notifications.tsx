@@ -2,29 +2,31 @@ import { Switch, StyleSheet, Text, View, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Spacing } from '@/constants/tokens'
 import { useNotificationStore, type NotificationSettings } from '@/lib/store/useNotificationStore'
+import { useTheme } from '@/hooks/useTheme'
+import type { ColorTheme } from '@/constants/theme'
 
 interface SettingRowProps {
   label: string
   description: string
   value: boolean
   onToggle: () => void
+  theme: ColorTheme
 }
 
-function SettingRow({ label, description, value, onToggle }: SettingRowProps) {
+function SettingRow({ label, description, value, onToggle, theme }: SettingRowProps) {
   return (
     <View style={styles.settingRow}>
       <View style={styles.settingText}>
-        <Text style={styles.settingLabel}>{label}</Text>
-        <Text style={styles.settingDesc}>{description}</Text>
+        <Text style={[styles.settingLabel, { color: theme.text.primary }]}>{label}</Text>
+        <Text style={[styles.settingDesc, { color: theme.text.tertiary }]}>{description}</Text>
       </View>
       <Switch
         value={value}
         onValueChange={onToggle}
-        trackColor={{ false: Colors.border, true: Colors.primaryLight }}
-        thumbColor={value ? Colors.primary : Colors.card}
+        trackColor={{ false: theme.border.default, true: theme.brand.primaryLight }}
+        thumbColor={value ? theme.brand.primary : theme.bg.elevated}
       />
     </View>
   )
@@ -37,29 +39,33 @@ const SETTING_KEYS: { key: keyof NotificationSettings; label: string; descriptio
 ]
 
 export default function NotificationSettingsScreen() {
+  const theme = useTheme()
   const settings = useNotificationStore((s) => s.settings)
   const toggleSetting = useNotificationStore((s) => s.toggleSetting)
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.navBar}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
+      <View style={[styles.navBar, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
         </Pressable>
-        <Text style={styles.navTitle}>알림 설정</Text>
+        <Text style={[styles.navTitle, { color: theme.text.primary }]}>알림 설정</Text>
         <View style={styles.navSpacer} />
       </View>
 
-      <View style={styles.settingsCard}>
+      <View style={[styles.settingsCard, { backgroundColor: theme.bg.surface }]}>
         {SETTING_KEYS.map((s, idx) => (
           <View key={s.key}>
             <SettingRow
+              theme={theme}
               label={s.label}
               description={s.description}
               value={settings[s.key]}
               onToggle={() => toggleSetting(s.key)}
             />
-            {idx < SETTING_KEYS.length - 1 ? <View style={styles.separator} /> : null}
+            {idx < SETTING_KEYS.length - 1 ? (
+              <View style={[styles.separator, { backgroundColor: theme.border.default }]} />
+            ) : null}
           </View>
         ))}
       </View>
@@ -70,30 +76,25 @@ export default function NotificationSettingsScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xl,
-    backgroundColor: Colors.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   navTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     marginHorizontal: Spacing.xl,
   },
   navSpacer: {
     width: 24,
   },
   settingsCard: {
-    backgroundColor: Colors.card,
     marginTop: Spacing.xxl,
   },
   settingRow: {
@@ -110,15 +111,12 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: FontSize.base,
     fontFamily: FontFamily.medium,
-    color: Colors.textPrimary,
   },
   settingDesc: {
     fontSize: FontSize.sm,
-    color: Colors.textTertiary,
     fontFamily: FontFamily.regular,
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
   },
 })

@@ -2,27 +2,28 @@ import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, router } from 'expo-router'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, LineHeight, Spacing } from '@/constants/tokens'
 import { Badge } from '@/components/ui/badge'
 import { Divider } from '@/components/ui/divider'
 import { MOCK_NEWS_ARTICLES } from '@/lib/mock-data'
 import { formatFullDate } from '@/lib/format'
+import { useTheme } from '@/hooks/useTheme'
 
 export default function NewsDetailScreen() {
+  const theme = useTheme()
   const { id } = useLocalSearchParams<{ id: string }>()
   const article = MOCK_NEWS_ARTICLES.find((a) => a.id === id)
 
   if (article == null) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.navBar}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bg.surface }]} edges={['top', 'bottom']}>
+        <View style={[styles.navBar, { borderBottomColor: theme.border.default }]}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
-            <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+            <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
           </Pressable>
         </View>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>기사를 찾을 수 없습니다.</Text>
+          <Text style={[styles.emptyText, { color: theme.text.secondary }]}>기사를 찾을 수 없습니다.</Text>
         </View>
       </SafeAreaView>
     )
@@ -31,12 +32,12 @@ export default function NewsDetailScreen() {
   const paragraphs = article.body.split('\n\n')
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.navBar}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg.base }]} edges={['top', 'bottom']}>
+      <View style={[styles.navBar, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
         </Pressable>
-        <Text style={styles.navTitle} numberOfLines={1}>
+        <Text style={[styles.navTitle, { color: theme.text.primary }]} numberOfLines={1}>
           {article.category}
         </Text>
         <View style={styles.navSpacer} />
@@ -47,21 +48,21 @@ export default function NewsDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.headerSection}>
+        <View style={[styles.headerSection, { backgroundColor: theme.bg.surface }]}>
           <Badge label={article.category} />
-          <Text style={styles.title}>{article.title}</Text>
+          <Text style={[styles.title, { color: theme.text.primary }]}>{article.title}</Text>
           <View style={styles.metaRow}>
-            <Text style={styles.metaText}>{formatFullDate(article.date)}</Text>
-            <Text style={styles.metaDot}>·</Text>
-            <Text style={styles.metaText}>{article.source}</Text>
+            <Text style={[styles.metaText, { color: theme.text.tertiary }]}>{formatFullDate(article.date)}</Text>
+            <Text style={[styles.metaDot, { color: theme.text.tertiary }]}>·</Text>
+            <Text style={[styles.metaText, { color: theme.text.tertiary }]}>{article.source}</Text>
           </View>
         </View>
 
         <Divider variant="section" />
 
-        <View style={styles.bodySection}>
+        <View style={[styles.bodySection, { backgroundColor: theme.bg.surface }]}>
           {paragraphs.map((paragraph, index) => (
-            <Text key={index} style={styles.bodyText}>
+            <Text key={index} style={[styles.bodyText, { color: theme.text.primary }]}>
               {paragraph}
             </Text>
           ))}
@@ -74,23 +75,19 @@ export default function NewsDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xl,
-    backgroundColor: Colors.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   navTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     marginHorizontal: Spacing.xl,
   },
   navSpacer: {
@@ -103,7 +100,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.section,
   },
   headerSection: {
-    backgroundColor: Colors.card,
     paddingHorizontal: Spacing.page,
     paddingTop: Spacing.xxl,
     paddingBottom: Spacing.xxl,
@@ -112,7 +108,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.xxl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     lineHeight: LineHeight.relaxed,
   },
   metaRow: {
@@ -122,22 +117,18 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: FontSize.sm,
-    color: Colors.textTertiary,
     fontFamily: FontFamily.regular,
   },
   metaDot: {
     fontSize: FontSize.sm,
-    color: Colors.textTertiary,
   },
   bodySection: {
-    backgroundColor: Colors.card,
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xxl,
     gap: Spacing.xxl,
   },
   bodyText: {
     fontSize: FontSize.base,
-    color: Colors.textPrimary,
     fontFamily: FontFamily.regular,
     lineHeight: LineHeight.relaxed,
   },
@@ -148,7 +139,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FontSize.base,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
   },
 })

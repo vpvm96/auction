@@ -1,52 +1,87 @@
 import { StyleSheet, Text, View, Pressable } from 'react-native'
 import { router } from 'expo-router'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { Ionicons } from '@expo/vector-icons'
-import { Badge } from '@/components/ui/badge'
 import { MOCK_NEWS_ARTICLES } from '@/lib/mock-data'
+import { useTheme } from '@/hooks/useTheme'
 
 interface NewsItemProps {
   id: string
   title: string
+  index: number
 }
 
-function NewsItemRow({ id, title }: NewsItemProps) {
+function NewsItemRow({ id, title, index }: NewsItemProps) {
+  const theme = useTheme()
   const handlePress = () => router.push(`/news/${id}`)
 
   return (
     <Pressable style={styles.newsItem} onPress={handlePress}>
-      <Badge label="뉴스" />
-      <Text style={styles.newsTitle} numberOfLines={1}>
+      {/* 번호 인덱스 */}
+      <Text style={[styles.newsIndex, { color: theme.brand.primary }]}>
+        {String(index + 1).padStart(2, '0')}
+      </Text>
+      <Text style={[styles.newsTitle, { color: theme.text.primary }]} numberOfLines={1}>
         {title}
       </Text>
-      <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />
+      <Ionicons name="chevron-forward" size={14} color={theme.text.tertiary} />
     </Pressable>
   )
 }
 
 export function NewsBanner() {
-  const item = MOCK_NEWS_ARTICLES[0]
+  const theme = useTheme()
+  const items = MOCK_NEWS_ARTICLES.slice(0, 2)
 
   return (
-    <View style={styles.container}>
-      <View style={styles.bannerHeader}>
-        <Text style={styles.bannerLabel}>뉴스</Text>
-        <Pressable onPress={() => router.push('/news')} hitSlop={8}>
-          <Text style={styles.moreLink}>전체보기</Text>
-        </Pressable>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.bg.surface,
+          borderColor: theme.border.subtle,
+        },
+      ]}
+    >
+      {/* 왼쪽 액센트 바 */}
+      <View style={[styles.accentBar, { backgroundColor: theme.brand.primary }]} />
+
+      <View style={styles.inner}>
+        <View style={styles.bannerHeader}>
+          <View style={styles.labelRow}>
+            <View style={[styles.liveChip, { backgroundColor: theme.brand.primaryLight }]}>
+              <View style={[styles.liveDot, { backgroundColor: theme.brand.primary }]} />
+              <Text style={[styles.liveText, { color: theme.brand.primary }]}>최신</Text>
+            </View>
+            <Text style={[styles.bannerLabel, { color: theme.text.primary }]}>경매 뉴스</Text>
+          </View>
+          <Pressable onPress={() => router.push('/news')} hitSlop={8}>
+            <Text style={[styles.moreLink, { color: theme.text.tertiary }]}>전체보기 →</Text>
+          </Pressable>
+        </View>
+
+        {items.map((item, i) => (
+          <NewsItemRow key={item.id} id={item.id} title={item.title} index={i} />
+        ))}
       </View>
-      <NewsItemRow id={item.id} title={item.title} />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.card,
     marginHorizontal: Spacing.page,
     borderRadius: Radius.xl,
     marginBottom: Spacing.xl,
+    flexDirection: 'row',
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  accentBar: {
+    width: 3,
+  },
+  inner: {
+    flex: 1,
     paddingVertical: Spacing.xs,
   },
   bannerHeader: {
@@ -55,29 +90,53 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.xxl,
     paddingTop: Spacing.xl,
-    paddingBottom: Spacing.xs,
+    paddingBottom: Spacing.md,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  liveChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 3,
+  },
+  liveDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  liveText: {
+    fontSize: FontSize.xxs,
+    fontFamily: FontFamily.bold,
   },
   bannerLabel: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
-    color: Colors.textSecondary,
   },
   moreLink: {
     fontSize: FontSize.sm,
-    fontFamily: FontFamily.semibold,
-    color: Colors.primary,
+    fontFamily: FontFamily.medium,
   },
   newsItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.xxl,
-    paddingVertical: Spacing.xl,
+    paddingVertical: Spacing.lg + 2,
     gap: Spacing.md,
+  },
+  newsIndex: {
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.extrabold,
+    width: 22,
   },
   newsTitle: {
     flex: 1,
     fontSize: FontSize.md,
-    color: Colors.textPrimary,
     fontFamily: FontFamily.medium,
   },
 })

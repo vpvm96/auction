@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import { Colors } from '@/constants/colors'
+import { useTheme } from '@/hooks/useTheme'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { StatsCard } from '@/components/home/stats-card'
 import { CategoryGrid } from '@/components/home/category-grid'
@@ -12,9 +12,20 @@ import { QuizBanner } from '@/components/home/quiz-banner'
 import { MOCK_STATS, MOCK_NOTIFICATIONS } from '@/lib/mock-data'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
 
+function getTodayLabel(): string {
+  const d = new Date()
+  const month = d.getMonth() + 1
+  const date = d.getDate()
+  const days = ['일', '월', '화', '수', '목', '금', '토']
+  const day = days[d.getDay()]
+  return `${month}월 ${date}일 ${day}요일`
+}
+
 function Header() {
+  const theme = useTheme()
   const readIds = useNotificationStore((s) => s.readIds)
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !readIds.has(n.id)).length
+  const totalAuctions = MOCK_STATS.realEstate.count + MOCK_STATS.personal.count
 
   const handleSearchPress = () => {
     router.push('/search')
@@ -25,21 +36,39 @@ function Header() {
   }
 
   return (
-    <View style={styles.header}>
+    <View
+      style={[
+        styles.header,
+        {
+          backgroundColor: theme.bg.surface,
+          borderBottomColor: theme.border.default,
+        },
+      ]}
+    >
+      {/* 로고 + 날짜/건수 */}
       <View style={styles.logoArea}>
-        <View style={styles.logoIcon} />
+        <View style={[styles.logoIcon, { backgroundColor: theme.brand.primary }]}>
+          <Text style={styles.logoText}>경</Text>
+        </View>
+        <View style={styles.logoMeta}>
+          <Text style={[styles.logoDate, { color: theme.text.primary }]}>{getTodayLabel()}</Text>
+          <Text style={[styles.logoCount, { color: theme.brand.primary }]}>
+            {totalAuctions.toLocaleString()}건 진행 중
+          </Text>
+        </View>
       </View>
-      <Pressable style={styles.searchBar} onPress={handleSearchPress}>
-        <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
-        <Text style={styles.searchPlaceholder}>경매 물건 검색</Text>
+
+      {/* 검색 버튼 */}
+      <Pressable style={styles.iconButton} onPress={handleSearchPress}>
+        <Ionicons name="search-outline" size={22} color={theme.text.secondary} />
       </Pressable>
+
+      {/* 알림 버튼 */}
       <Pressable style={styles.bellButton} onPress={handleNotificationPress}>
-        <Ionicons name="notifications-outline" size={24} color={Colors.textPrimary} />
+        <Ionicons name="notifications-outline" size={22} color={theme.text.secondary} />
         {unreadCount > 0 ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {unreadCount > 99 ? '99+' : String(unreadCount)}
-            </Text>
+          <View style={[styles.badge, { backgroundColor: theme.auction.hot }]}>
+            <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : String(unreadCount)}</Text>
           </View>
         ) : null}
       </Pressable>
@@ -48,8 +77,10 @@ function Header() {
 }
 
 export default function HomeScreen() {
+  const theme = useTheme()
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
       <Header />
       <ScrollView
         style={styles.scroll}
@@ -57,10 +88,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <NewsBanner />
-        <StatsCard
-          realEstate={MOCK_STATS.realEstate}
-          personal={MOCK_STATS.personal}
-        />
+        <StatsCard realEstate={MOCK_STATS.realEstate} personal={MOCK_STATS.personal} />
         <QuizBanner />
         <DateSelector />
         <CategoryGrid />
@@ -72,43 +100,46 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.lg,
-    backgroundColor: Colors.white,
-    gap: Spacing.lg,
+    gap: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   logoArea: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.primary,
-  },
-  searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.background,
-    borderRadius: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md + 1,
-    gap: Spacing.md,
+    gap: Spacing.xl,
   },
-  searchPlaceholder: {
+  logoIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoMeta: {
+    gap: 1,
+  },
+  logoDate: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.semibold,
+  },
+  logoCount: {
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.bold,
+  },
+  logoText: {
     fontSize: FontSize.base,
-    color: Colors.textTertiary,
+    fontFamily: FontFamily.extrabold,
+    color: '#FFFFFF',
+  },
+  iconButton: {
+    padding: Spacing.xs,
   },
   bellButton: {
     padding: Spacing.xs,
@@ -120,7 +151,6 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 3,
@@ -128,7 +158,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 9,
     fontFamily: FontFamily.bold,
-    color: Colors.white,
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   scroll: {

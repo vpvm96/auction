@@ -3,15 +3,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Spacing } from '@/constants/tokens'
 import { createAuctionRenderItem } from '@/components/auction/render-auction-item'
 import { useRecentlyViewedStore } from '@/lib/store/useRecentlyViewedStore'
 import { useFavoritesStore } from '@/lib/store/useFavoritesStore'
 import { useAuctionsByIds } from '@/lib/queries/auctions'
 import { toAuctionItem } from '@/lib/api/auctions'
+import { useTheme } from '@/hooks/useTheme'
 
 export default function RecentlyViewedScreen() {
+  const theme = useTheme()
   const ids = useRecentlyViewedStore((s) => s.ids)
   const clear = useRecentlyViewedStore((s) => s.clear)
   const favoriteIds = useFavoritesStore((s) => s.favoriteIds)
@@ -26,15 +27,15 @@ export default function RecentlyViewedScreen() {
     .map(toAuctionItem)
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.navBar}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
+      <View style={[styles.navBar, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
         </Pressable>
-        <Text style={styles.navTitle}>최근 본 물건</Text>
+        <Text style={[styles.navTitle, { color: theme.text.primary }]}>최근 본 물건</Text>
         {items.length > 0 ? (
           <Pressable onPress={clear} hitSlop={8}>
-            <Text style={styles.clearText}>전체 삭제</Text>
+            <Text style={[styles.clearText, { color: theme.text.secondary }]}>전체 삭제</Text>
           </Pressable>
         ) : (
           <View style={styles.navSpacer} />
@@ -43,7 +44,7 @@ export default function RecentlyViewedScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={theme.brand.primary} />
         </View>
       ) : items.length > 0 ? (
         <FlashList
@@ -57,11 +58,11 @@ export default function RecentlyViewedScreen() {
         />
       ) : (
         <View style={styles.empty}>
-          <Ionicons name="eye-off-outline" size={48} color={Colors.textTertiary} />
-          <Text style={styles.emptyTitle}>최근 본 물건이 없습니다</Text>
-          <Text style={styles.emptyDesc}>경매 목록에서 물건을 확인해보세요.</Text>
-          <Pressable style={styles.goListButton} onPress={() => router.push('/(tabs)/list')}>
-            <Text style={styles.goListText}>경매 목록 보기</Text>
+          <Ionicons name="eye-off-outline" size={48} color={theme.text.tertiary} />
+          <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>최근 본 물건이 없습니다</Text>
+          <Text style={[styles.emptyDesc, { color: theme.text.secondary }]}>경매 목록에서 물건을 확인해보세요.</Text>
+          <Pressable style={[styles.goListButton, { backgroundColor: theme.brand.primary }]} onPress={() => router.push('/(tabs)/list')}>
+            <Text style={[styles.goListText, { color: theme.brand.onPrimary }]}>경매 목록 보기</Text>
           </Pressable>
         </View>
       )}
@@ -72,23 +73,19 @@ export default function RecentlyViewedScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xl,
-    backgroundColor: Colors.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   navTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     marginHorizontal: Spacing.xl,
   },
   navSpacer: {
@@ -97,7 +94,6 @@ const styles = StyleSheet.create({
   clearText: {
     fontSize: FontSize.sm,
     fontFamily: FontFamily.semibold,
-    color: Colors.textSecondary,
     width: 40,
     textAlign: 'right',
   },
@@ -120,11 +116,9 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: FontSize.lg,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
   },
   emptyDesc: {
     fontSize: FontSize.base,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
     textAlign: 'center',
   },
@@ -132,12 +126,10 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     paddingHorizontal: Spacing.xxxl,
     paddingVertical: Spacing.xl,
-    backgroundColor: Colors.primary,
     borderRadius: 999,
   },
   goListText: {
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
-    color: Colors.white,
   },
 })

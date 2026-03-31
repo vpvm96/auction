@@ -2,8 +2,8 @@ import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { useTheme } from '@/hooks/useTheme'
 
 const APP_VERSION = '1.0.0'
 const BUILD_NUMBER = '100'
@@ -17,38 +17,42 @@ const INFO_ROWS = [
 ]
 
 export default function VersionInfoScreen() {
+  const theme = useTheme()
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.navBar}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
+      <View style={[styles.navBar, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
         </Pressable>
-        <Text style={styles.navTitle}>버전 정보</Text>
+        <Text style={[styles.navTitle, { color: theme.text.primary }]}>버전 정보</Text>
         <View style={styles.navSpacer} />
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.logoSection}>
-          <View style={styles.logoCircle}>
-            <Ionicons name="hammer-outline" size={40} color={Colors.primary} />
+        <View style={[styles.logoSection, { backgroundColor: theme.bg.surface }]}>
+          <View style={[styles.logoCircle, { backgroundColor: theme.brand.primaryLight }]}>
+            <Ionicons name="hammer-outline" size={40} color={theme.brand.primary} />
           </View>
-          <Text style={styles.appName}>경매의정석</Text>
-          <Text style={styles.appVersion}>v{APP_VERSION}</Text>
+          <Text style={[styles.appName, { color: theme.text.primary }]}>경매의정석</Text>
+          <Text style={[styles.appVersion, { color: theme.text.secondary }]}>v{APP_VERSION}</Text>
         </View>
 
-        <View style={styles.infoCard}>
+        <View style={[styles.infoCard, { backgroundColor: theme.bg.surface }]}>
           {INFO_ROWS.map((row, idx) => (
             <View key={row.label}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>{row.label}</Text>
-                <Text style={styles.infoValue}>{row.value}</Text>
+                <Text style={[styles.infoLabel, { color: theme.text.secondary }]}>{row.label}</Text>
+                <Text style={[styles.infoValue, { color: theme.text.primary }]}>{row.value}</Text>
               </View>
-              {idx < INFO_ROWS.length - 1 ? <View style={styles.separator} /> : null}
+              {idx < INFO_ROWS.length - 1 ? (
+                <View style={[styles.separator, { backgroundColor: theme.border.default }]} />
+              ) : null}
             </View>
           ))}
         </View>
 
-        <Text style={styles.copyright}>
+        <Text style={[styles.copyright, { color: theme.text.tertiary }]}>
           {'Copyright © 2026 경매의정석\nAll rights reserved.'}
         </Text>
       </ScrollView>
@@ -59,23 +63,19 @@ export default function VersionInfoScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xl,
-    backgroundColor: Colors.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   navTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     marginHorizontal: Spacing.xl,
   },
   navSpacer: {
@@ -88,14 +88,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.section,
     gap: Spacing.md,
-    backgroundColor: Colors.card,
     marginBottom: Spacing.md,
   },
   logoCircle: {
     width: 80,
     height: 80,
     borderRadius: Radius.xxl,
-    backgroundColor: Colors.primaryBg,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.md,
@@ -103,15 +101,12 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: FontSize.xxl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
   },
   appVersion: {
     fontSize: FontSize.base,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
   },
   infoCard: {
-    backgroundColor: Colors.card,
     marginBottom: Spacing.xxl,
   },
   infoRow: {
@@ -123,23 +118,19 @@ const styles = StyleSheet.create({
   infoLabel: {
     flex: 1,
     fontSize: FontSize.base,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
   },
   infoValue: {
     fontSize: FontSize.base,
-    color: Colors.textPrimary,
     fontFamily: FontFamily.medium,
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
     marginLeft: Spacing.page,
   },
   copyright: {
     textAlign: 'center',
     fontSize: FontSize.sm,
-    color: Colors.textTertiary,
     fontFamily: FontFamily.regular,
     lineHeight: 20,
     paddingBottom: Spacing.section,

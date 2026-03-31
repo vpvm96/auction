@@ -7,8 +7,8 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { useTheme } from '@/hooks/useTheme'
 
 interface FormInputProps {
   label: string
@@ -35,24 +35,25 @@ export function FormInput({
   onSubmitEditing,
   error,
 }: FormInputProps) {
+  const theme = useTheme()
   const [isFocused, setIsFocused] = useState(false)
+
+  const borderColor = error != null
+    ? theme.status.danger
+    : isFocused
+      ? theme.brand.primary
+      : theme.border.default
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <View
-        style={[
-          styles.inputWrapper,
-          isFocused ? styles.inputWrapperFocused : null,
-          error != null ? styles.inputWrapperError : null,
-        ]}
-      >
+      <Text style={[styles.label, { color: theme.text.primary }]}>{label}</Text>
+      <View style={[styles.inputWrapper, { backgroundColor: theme.bg.surface, borderColor }]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: theme.text.primary }]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={theme.text.tertiary}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
@@ -63,7 +64,9 @@ export function FormInput({
           autoCorrect={false}
         />
       </View>
-      {error != null ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error != null ? (
+        <Text style={[styles.errorText, { color: theme.status.danger }]}>{error}</Text>
+      ) : null}
     </View>
   )
 }
@@ -75,31 +78,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: FontSize.sm,
     fontFamily: FontFamily.semibold,
-    color: Colors.textPrimary,
   },
   inputWrapper: {
-    backgroundColor: Colors.card,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
     paddingHorizontal: Spacing.xxl,
     paddingVertical: Spacing.xl,
   },
-  inputWrapperFocused: {
-    borderColor: Colors.primary,
-  },
-  inputWrapperError: {
-    borderColor: Colors.increase,
-  },
   input: {
     fontSize: FontSize.base,
-    color: Colors.textPrimary,
     fontFamily: FontFamily.regular,
     padding: 0,
   },
   errorText: {
     fontSize: FontSize.xs,
-    color: Colors.increase,
     fontFamily: FontFamily.regular,
   },
 })

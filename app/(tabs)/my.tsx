@@ -2,80 +2,85 @@ import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useTheme } from '@/hooks/useTheme'
+import type { ColorTheme } from '@/constants/theme'
 
 interface MenuItemProps {
   icon: React.ComponentProps<typeof Ionicons>['name']
   label: string
   onPress?: () => void
+  theme: ColorTheme
 }
 
-function MenuItem({ icon, label, onPress }: MenuItemProps) {
+function MenuItem({ icon, label, onPress, theme }: MenuItemProps) {
   return (
     <Pressable style={styles.menuItem} onPress={onPress}>
-      <Ionicons name={icon} size={20} color={Colors.textSecondary} />
-      <Text style={styles.menuLabel}>{label}</Text>
-      <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />
+      <Ionicons name={icon} size={20} color={theme.text.secondary} />
+      <Text style={[styles.menuLabel, { color: theme.text.primary }]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={16} color={theme.text.tertiary} />
     </Pressable>
   )
 }
 
 export default function MyScreen() {
+  const theme = useTheme()
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>MY</Text>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>MY</Text>
       </View>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {isLoggedIn ? (
-          <View style={styles.loginBanner}>
-            <View style={styles.avatarCircle}>
-              <Ionicons name="person" size={32} color={Colors.primary} />
+          <View style={[styles.loginBanner, { backgroundColor: theme.bg.surface }]}>
+            <View style={[styles.avatarCircle, { backgroundColor: theme.border.default }]}>
+              <Ionicons name="person" size={32} color={theme.brand.primary} />
             </View>
             <View style={styles.loginText}>
-              <Text style={styles.loginTitle}>{user?.name ?? ''}</Text>
-              <Text style={styles.loginDesc}>{user?.email ?? ''}</Text>
+              <Text style={[styles.loginTitle, { color: theme.text.primary }]}>{user?.name ?? ''}</Text>
+              <Text style={[styles.loginDesc, { color: theme.text.secondary }]}>{user?.email ?? ''}</Text>
             </View>
-            <Pressable style={styles.logoutButton} onPress={logout}>
-              <Text style={styles.logoutButtonText}>로그아웃</Text>
+            <Pressable style={[styles.logoutButton, { borderColor: theme.border.default }]} onPress={logout}>
+              <Text style={[styles.logoutButtonText, { color: theme.text.secondary }]}>로그아웃</Text>
             </Pressable>
           </View>
         ) : (
-          <View style={styles.loginBanner}>
-            <View style={styles.avatarCircle}>
-              <Ionicons name="person" size={32} color={Colors.textTertiary} />
+          <View style={[styles.loginBanner, { backgroundColor: theme.bg.surface }]}>
+            <View style={[styles.avatarCircle, { backgroundColor: theme.border.default }]}>
+              <Ionicons name="person" size={32} color={theme.text.tertiary} />
             </View>
             <View style={styles.loginText}>
-              <Text style={styles.loginTitle}>로그인이 필요합니다</Text>
-              <Text style={styles.loginDesc}>로그인하고 더 많은 기능을 이용하세요</Text>
+              <Text style={[styles.loginTitle, { color: theme.text.primary }]}>로그인이 필요합니다</Text>
+              <Text style={[styles.loginDesc, { color: theme.text.secondary }]}>로그인하고 더 많은 기능을 이용하세요</Text>
             </View>
             <Pressable
-              style={styles.loginButton}
+              style={[styles.loginButton, { backgroundColor: theme.brand.primary }]}
               onPress={() => router.push('/auth/login')}
             >
-              <Text style={styles.loginButtonText}>로그인</Text>
+              <Text style={[styles.loginButtonText, { color: theme.brand.onPrimary }]}>로그인</Text>
             </Pressable>
           </View>
         )}
 
         <View style={styles.menuSection}>
-          <Text style={styles.sectionLabel}>경매 활동</Text>
-          <View style={styles.menuCard}>
+          <Text style={[styles.sectionLabel, { color: theme.text.secondary }]}>경매 활동</Text>
+          <View style={[styles.menuCard, { backgroundColor: theme.bg.surface }]}>
             <MenuItem
+              theme={theme}
               icon="eye-outline"
               label="최근 본 물건"
               onPress={() => router.push('/my/recently-viewed')}
             />
-            <View style={styles.menuDivider} />
-            <MenuItem icon="heart-outline" label="관심목록" onPress={() => router.push('/(tabs)/favorites')} />
-            <View style={styles.menuDivider} />
+            <View style={[styles.menuDivider, { backgroundColor: theme.border.default }]} />
+            <MenuItem theme={theme} icon="heart-outline" label="관심목록" onPress={() => router.push('/(tabs)/favorites')} />
+            <View style={[styles.menuDivider, { backgroundColor: theme.border.default }]} />
             <MenuItem
+              theme={theme}
               icon="notifications-outline"
               label="알림 설정"
               onPress={() => router.push('/my/notifications')}
@@ -85,15 +90,17 @@ export default function MyScreen() {
 
         {isLoggedIn ? (
           <View style={styles.menuSection}>
-            <Text style={styles.sectionLabel}>계정 관리</Text>
-            <View style={styles.menuCard}>
+            <Text style={[styles.sectionLabel, { color: theme.text.secondary }]}>계정 관리</Text>
+            <View style={[styles.menuCard, { backgroundColor: theme.bg.surface }]}>
               <MenuItem
+                theme={theme}
                 icon="person-outline"
                 label="프로필 수정"
                 onPress={() => router.push('/my/profile-edit')}
               />
-              <View style={styles.menuDivider} />
+              <View style={[styles.menuDivider, { backgroundColor: theme.border.default }]} />
               <MenuItem
+                theme={theme}
                 icon="trash-outline"
                 label="회원 탈퇴"
                 onPress={() => router.push('/my/delete-account')}
@@ -103,21 +110,24 @@ export default function MyScreen() {
         ) : null}
 
         <View style={styles.menuSection}>
-          <Text style={styles.sectionLabel}>앱 설정</Text>
-          <View style={styles.menuCard}>
+          <Text style={[styles.sectionLabel, { color: theme.text.secondary }]}>앱 설정</Text>
+          <View style={[styles.menuCard, { backgroundColor: theme.bg.surface }]}>
             <MenuItem
+              theme={theme}
               icon="information-circle-outline"
               label="버전 정보"
               onPress={() => router.push('/my/version-info')}
             />
-            <View style={styles.menuDivider} />
+            <View style={[styles.menuDivider, { backgroundColor: theme.border.default }]} />
             <MenuItem
+              theme={theme}
               icon="document-text-outline"
               label="이용약관"
               onPress={() => router.push('/my/terms')}
             />
-            <View style={styles.menuDivider} />
+            <View style={[styles.menuDivider, { backgroundColor: theme.border.default }]} />
             <MenuItem
+              theme={theme}
               icon="lock-closed-outline"
               label="개인정보처리방침"
               onPress={() => router.push('/my/privacy')}
@@ -132,19 +142,15 @@ export default function MyScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     paddingHorizontal: Spacing.page,
     paddingVertical: 14,
-    backgroundColor: Colors.white,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   headerTitle: {
     fontSize: FontSize.xxl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
   },
   scroll: {
     flex: 1,
@@ -152,7 +158,6 @@ const styles = StyleSheet.create({
   loginBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
     padding: Spacing.xxl,
     marginBottom: Spacing.md,
     gap: Spacing.xl,
@@ -161,7 +166,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -172,14 +176,11 @@ const styles = StyleSheet.create({
   loginTitle: {
     fontSize: FontSize.lg,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
   },
   loginDesc: {
     fontSize: FontSize.sm,
-    color: Colors.textSecondary,
   },
   loginButton: {
-    backgroundColor: Colors.primary,
     borderRadius: Radius.md,
     paddingHorizontal: 14,
     paddingVertical: Spacing.md,
@@ -187,11 +188,9 @@ const styles = StyleSheet.create({
   loginButtonText: {
     fontSize: FontSize.md,
     fontFamily: FontFamily.bold,
-    color: Colors.white,
   },
   logoutButton: {
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: Radius.md,
     paddingHorizontal: 14,
     paddingVertical: Spacing.md,
@@ -199,7 +198,6 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     fontSize: FontSize.md,
     fontFamily: FontFamily.medium,
-    color: Colors.textSecondary,
   },
   menuSection: {
     marginBottom: Spacing.md,
@@ -207,13 +205,10 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: FontSize.sm,
     fontFamily: FontFamily.semibold,
-    color: Colors.textSecondary,
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.lg,
   },
-  menuCard: {
-    backgroundColor: Colors.card,
-  },
+  menuCard: {},
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -224,12 +219,10 @@ const styles = StyleSheet.create({
   menuLabel: {
     flex: 1,
     fontSize: FontSize.base,
-    color: Colors.textPrimary,
     fontFamily: FontFamily.medium,
   },
   menuDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
     marginLeft: 48,
   },
 })

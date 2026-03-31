@@ -3,10 +3,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { MOCK_NOTIFICATIONS, type NotificationItem } from '@/lib/mock-data'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
+import { useTheme } from '@/hooks/useTheme'
 
 const ALL_IDS = MOCK_NOTIFICATIONS.map((n) => n.id)
 
@@ -21,36 +21,61 @@ interface NotificationRowProps {
 }
 
 function NotificationRow({ id, title, body, date, type, isRead, onMarkRead }: NotificationRowProps) {
+  const theme = useTheme()
   const iconName = type === 'auction' ? 'home-outline' : 'information-circle-outline'
   const isSystem = type === 'system'
 
   return (
     <Pressable
-      style={[styles.notifItem, isRead ? styles.notifItemRead : null]}
+      style={[
+        styles.notifItem,
+        { backgroundColor: theme.bg.surface },
+        isRead ? styles.notifItemRead : null,
+      ]}
       onPress={() => onMarkRead(id)}
     >
-      <View style={[styles.notifIcon, isSystem ? styles.notifIconSystem : null]}>
-        <Ionicons name={iconName} size={18} color={isSystem ? Colors.textSecondary : Colors.primary} />
+      <View style={[
+        styles.notifIcon,
+        { backgroundColor: isSystem ? theme.border.default : theme.brand.primaryLight },
+      ]}>
+        <Ionicons
+          name={iconName}
+          size={18}
+          color={isSystem ? theme.text.secondary : theme.brand.primary}
+        />
       </View>
       <View style={styles.notifContent}>
         <View style={styles.notifTitleRow}>
-          <Text style={[styles.notifTitle, isRead ? styles.notifTitleRead : null]} numberOfLines={1}>
+          <Text
+            style={[
+              styles.notifTitle,
+              { color: isRead ? theme.text.secondary : theme.text.primary },
+              isRead ? { fontFamily: FontFamily.medium } : null,
+            ]}
+            numberOfLines={1}
+          >
             {title}
           </Text>
-          {!isRead ? <View style={styles.unreadDot} /> : null}
+          {!isRead ? (
+            <View style={[styles.unreadDot, { backgroundColor: theme.brand.primary }]} />
+          ) : null}
         </View>
-        <Text style={styles.notifBody} numberOfLines={2}>{body}</Text>
-        <Text style={styles.notifDate}>{date}</Text>
+        <Text style={[styles.notifBody, { color: theme.text.secondary }]} numberOfLines={2}>
+          {body}
+        </Text>
+        <Text style={[styles.notifDate, { color: theme.text.tertiary }]}>{date}</Text>
       </View>
     </Pressable>
   )
 }
 
 function NotifSeparator() {
-  return <View style={styles.separator} />
+  const theme = useTheme()
+  return <View style={[styles.separator, { backgroundColor: theme.border.default }]} />
 }
 
 export default function NotificationsScreen() {
+  const theme = useTheme()
   const readIds = useNotificationStore((s) => s.readIds)
   const markRead = useNotificationStore((s) => s.markRead)
   const markAllRead = useNotificationStore((s) => s.markAllRead)
@@ -70,15 +95,15 @@ export default function NotificationsScreen() {
   )
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.navBar}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
+      <View style={[styles.navBar, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
         </Pressable>
-        <Text style={styles.navTitle}>알림</Text>
+        <Text style={[styles.navTitle, { color: theme.text.primary }]}>알림</Text>
         {unreadCount > 0 ? (
           <Pressable onPress={() => markAllRead(ALL_IDS)} hitSlop={8}>
-            <Text style={styles.markAllText}>전체 읽음</Text>
+            <Text style={[styles.markAllText, { color: theme.brand.primary }]}>전체 읽음</Text>
           </Pressable>
         ) : (
           <View style={styles.navSpacer} />
@@ -94,8 +119,8 @@ export default function NotificationsScreen() {
         extraData={readIds}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="notifications-off-outline" size={48} color={Colors.textTertiary} />
-            <Text style={styles.emptyText}>알림이 없습니다.</Text>
+            <Ionicons name="notifications-off-outline" size={48} color={theme.text.tertiary} />
+            <Text style={[styles.emptyText, { color: theme.text.tertiary }]}>알림이 없습니다.</Text>
           </View>
         }
         contentContainerStyle={styles.listContent}
@@ -107,23 +132,19 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xl,
-    backgroundColor: Colors.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   navTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     marginHorizontal: Spacing.xl,
   },
   navSpacer: {
@@ -132,7 +153,6 @@ const styles = StyleSheet.create({
   markAllText: {
     fontSize: FontSize.sm,
     fontFamily: FontFamily.semibold,
-    color: Colors.primary,
   },
   listContent: {
     paddingBottom: Spacing.section,
@@ -140,7 +160,6 @@ const styles = StyleSheet.create({
   notifItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: Colors.card,
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xxl,
     gap: Spacing.xl,
@@ -152,12 +171,8 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: Radius.xxl,
-    backgroundColor: Colors.primaryBg,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  notifIconSystem: {
-    backgroundColor: Colors.border,
   },
   notifContent: {
     flex: 1,
@@ -172,32 +187,23 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
-  },
-  notifTitleRead: {
-    fontFamily: FontFamily.medium,
-    color: Colors.textSecondary,
   },
   unreadDot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: Colors.primary,
   },
   notifBody: {
     fontSize: FontSize.sm,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
     lineHeight: 20,
   },
   notifDate: {
     fontSize: FontSize.xs,
-    color: Colors.textTertiary,
     fontFamily: FontFamily.regular,
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
   },
   empty: {
     padding: Spacing.section,
@@ -206,6 +212,5 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FontSize.base,
-    color: Colors.textTertiary,
   },
 })

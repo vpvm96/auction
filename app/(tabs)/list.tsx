@@ -1,18 +1,16 @@
 import { StyleSheet, Text, View, Pressable, ScrollView, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
-import { useLocalSearchParams, router } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useIsFocused } from '@react-navigation/native'
 import { useState, useEffect, useRef } from 'react'
-import { Ionicons } from '@expo/vector-icons'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { createAuctionRenderItem } from '@/components/auction/render-auction-item'
-import { MOCK_COURTS, type AuctionType } from '@/lib/mock-data'
-import { useListFilterStore } from '@/lib/store/useListFilterStore'
+import { type AuctionType } from '@/lib/mock-data'
 import { useFavoritesStore } from '@/lib/store/useFavoritesStore'
 import { useAuctions } from '@/lib/queries/auctions'
 import { toAuctionItem } from '@/lib/api/auctions'
+import { useTheme } from '@/hooks/useTheme'
 
 interface FilterTab {
   type: AuctionType | 'all'
@@ -47,6 +45,7 @@ const SORT_OPTIONS: SortOption[] = [
 ]
 
 export default function ListScreen() {
+  const theme = useTheme()
   const params = useLocalSearchParams<{ type?: AuctionType }>()
   const [selectedType, setSelectedType] = useState<AuctionType | 'all'>(
     params.type ?? 'all'
@@ -71,14 +70,9 @@ export default function ListScreen() {
   }, [selectedType])
 
   const [selectedSort, setSelectedSort] = useState<SortType>('latest')
-  const selectedCourtId = useListFilterStore((s) => s.selectedCourtId)
   const favoriteIds = useFavoritesStore((s) => s.favoriteIds)
   const toggleFavorite = useFavoritesStore((s) => s.toggle)
   const renderItem = createAuctionRenderItem({ favoriteIds, toggleFavorite })
-
-  const selectedCourtName = selectedCourtId != null
-    ? (MOCK_COURTS.find((c) => c.id === selectedCourtId)?.name ?? '법원 선택')
-    : null
 
   const activeTab = FILTER_TABS.find((t) => t.type === selectedType)
 
@@ -103,16 +97,16 @@ export default function ListScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>경매 목록</Text>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>경매 목록</Text>
       </View>
 
       <ScrollView
         ref={filterScrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.filterScroll}
+        style={[styles.filterScroll, { backgroundColor: theme.bg.surface }]}
         contentContainerStyle={styles.filterContent}
       >
         {FILTER_TABS.map((tab) => {
@@ -120,7 +114,10 @@ export default function ListScreen() {
           return (
             <Pressable
               key={tab.type}
-              style={[styles.filterTab, isActive && styles.filterTabActive]}
+              style={[
+                styles.filterTab,
+                { borderColor: isActive ? theme.brand.primary : theme.border.default, backgroundColor: isActive ? theme.brand.primary : theme.bg.surface },
+              ]}
               onPress={() => setSelectedType(tab.type)}
               onLayout={(e) => {
                 tabLayoutsRef.current[tab.type] = {
@@ -129,7 +126,10 @@ export default function ListScreen() {
                 }
               }}
             >
-              <Text style={[styles.filterTabText, isActive && styles.filterTabTextActive]}>
+              <Text style={[
+                styles.filterTabText,
+                { color: isActive ? theme.brand.onPrimary : theme.text.secondary, fontFamily: isActive ? FontFamily.bold : FontFamily.medium },
+              ]}>
                 {tab.label}
               </Text>
             </Pressable>
@@ -137,32 +137,8 @@ export default function ListScreen() {
         })}
       </ScrollView>
 
-      <View style={styles.courtFilterRow}>
-        <Pressable
-          style={[styles.courtButton, selectedCourtId != null ? styles.courtButtonActive : null]}
-          onPress={() => router.push('/region-select')}
-        >
-          <Ionicons
-            name="location-outline"
-            size={14}
-            color={selectedCourtId != null ? Colors.primary : Colors.textSecondary}
-          />
-          <Text
-            style={[styles.courtButtonText, selectedCourtId != null ? styles.courtButtonTextActive : null]}
-            numberOfLines={1}
-          >
-            {selectedCourtName ?? '전체 법원'}
-          </Text>
-          <Ionicons
-            name="chevron-down"
-            size={12}
-            color={selectedCourtId != null ? Colors.primary : Colors.textTertiary}
-          />
-        </Pressable>
-      </View>
-
-      <View style={styles.sortRow}>
-        <Text style={styles.resultCount}>
+      <View style={[styles.sortRow, { backgroundColor: theme.bg.base }]}>
+        <Text style={[styles.resultCount, { color: theme.text.primary }]}>
           {isLoading ? '-' : `${sorted.length}건`}
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -172,10 +148,16 @@ export default function ListScreen() {
               return (
                 <Pressable
                   key={opt.type}
-                  style={[styles.sortButton, isActive && styles.sortButtonActive]}
+                  style={[
+                    styles.sortButton,
+                    { backgroundColor: isActive ? theme.brand.primaryLight : theme.border.default },
+                  ]}
                   onPress={() => setSelectedSort(opt.type)}
                 >
-                  <Text style={[styles.sortButtonText, isActive && styles.sortButtonTextActive]}>
+                  <Text style={[
+                    styles.sortButtonText,
+                    { color: isActive ? theme.brand.primary : theme.text.secondary, fontFamily: isActive ? FontFamily.bold : FontFamily.medium },
+                  ]}>
                     {opt.label}
                   </Text>
                 </Pressable>
@@ -187,7 +169,7 @@ export default function ListScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={theme.brand.primary} />
         </View>
       ) : (
         <FlashList
@@ -203,7 +185,7 @@ export default function ListScreen() {
             isFetchingNextPage ? (
               <ActivityIndicator
                 style={styles.footerLoader}
-                color={Colors.primary}
+                color={theme.brand.primary}
               />
             ) : null
           }
@@ -217,55 +199,17 @@ export default function ListScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     paddingHorizontal: Spacing.page,
     paddingVertical: 14,
-    backgroundColor: Colors.white,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   headerTitle: {
     fontSize: FontSize.xxl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
-  },
-  courtFilterRow: {
-    paddingHorizontal: Spacing.page,
-    paddingVertical: Spacing.lg,
-    backgroundColor: Colors.white,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  courtButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.xxl,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
-    maxWidth: '70%',
-  },
-  courtButtonActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primaryBg,
-  },
-  courtButtonText: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.medium,
-    color: Colors.textSecondary,
-  },
-  courtButtonTextActive: {
-    color: Colors.primary,
-    fontFamily: FontFamily.bold,
   },
   filterScroll: {
-    backgroundColor: Colors.white,
     maxHeight: 48,
   },
   filterContent: {
@@ -278,21 +222,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: Radius.xxl,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
-  },
-  filterTabActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
   },
   filterTabText: {
     fontSize: FontSize.md,
-    fontFamily: FontFamily.medium,
-    color: Colors.textSecondary,
-  },
-  filterTabTextActive: {
-    color: Colors.white,
-    fontFamily: FontFamily.bold,
   },
   sortRow: {
     flexDirection: 'row',
@@ -300,12 +232,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.lg,
     gap: Spacing.xl,
-    backgroundColor: Colors.background,
   },
   resultCount: {
     fontSize: FontSize.md,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
   },
   sortOptions: {
     flexDirection: 'row',
@@ -315,19 +245,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: 5,
     borderRadius: Radius.xl,
-    backgroundColor: Colors.border,
-  },
-  sortButtonActive: {
-    backgroundColor: Colors.primaryBg,
   },
   sortButtonText: {
     fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    fontFamily: FontFamily.medium,
-  },
-  sortButtonTextActive: {
-    color: Colors.primary,
-    fontFamily: FontFamily.bold,
   },
   loadingContainer: {
     flex: 1,

@@ -12,11 +12,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { FormInput } from '@/components/auth/form-input'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useTheme } from '@/hooks/useTheme'
 
 export default function ProfileEditScreen() {
+  const theme = useTheme()
   const user = useAuthStore((s) => s.user)
   const updateProfile = useAuthStore((s) => s.updateProfile)
 
@@ -36,16 +37,16 @@ export default function ProfileEditScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg.base }]} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.navBar}>
+        <View style={[styles.navBar, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
           <Pressable onPress={() => router.back()} hitSlop={8}>
-            <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+            <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
           </Pressable>
-          <Text style={styles.navTitle}>프로필 수정</Text>
+          <Text style={[styles.navTitle, { color: theme.text.primary }]}>프로필 수정</Text>
           <View style={styles.navSpacer} />
         </View>
 
@@ -69,22 +70,22 @@ export default function ProfileEditScreen() {
           />
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>이메일</Text>
-            <View style={styles.readonlyWrapper}>
-              <Text style={styles.readonlyText}>{user?.email ?? ''}</Text>
+            <Text style={[styles.fieldLabel, { color: theme.text.primary }]}>이메일</Text>
+            <View style={[styles.readonlyWrapper, { backgroundColor: theme.bg.sunken, borderColor: theme.border.default }]}>
+              <Text style={[styles.readonlyText, { color: theme.text.secondary }]}>{user?.email ?? ''}</Text>
             </View>
-            <Text style={styles.fieldHint}>이메일은 변경할 수 없습니다.</Text>
+            <Text style={[styles.fieldHint, { color: theme.text.tertiary }]}>이메일은 변경할 수 없습니다.</Text>
           </View>
 
           {isSaved ? (
             <View style={styles.successRow}>
-              <Ionicons name="checkmark-circle" size={18} color={Colors.success} />
-              <Text style={styles.successText}>저장되었습니다.</Text>
+              <Ionicons name="checkmark-circle" size={18} color={theme.status.success} />
+              <Text style={[styles.successText, { color: theme.status.success }]}>저장되었습니다.</Text>
             </View>
           ) : null}
 
-          <Pressable style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>저장하기</Text>
+          <Pressable style={[styles.saveButton, { backgroundColor: theme.brand.primary }]} onPress={handleSave}>
+            <Text style={[styles.saveButtonText, { color: theme.brand.onPrimary }]}>저장하기</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -95,7 +96,6 @@ export default function ProfileEditScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   flex: {
     flex: 1,
@@ -105,16 +105,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xl,
-    backgroundColor: Colors.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   navTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     marginHorizontal: Spacing.xl,
   },
   navSpacer: {
@@ -132,24 +129,19 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: FontSize.sm,
     fontFamily: FontFamily.semibold,
-    color: Colors.textPrimary,
   },
   readonlyWrapper: {
-    backgroundColor: Colors.border,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
     paddingHorizontal: Spacing.xxl,
     paddingVertical: Spacing.xl,
   },
   readonlyText: {
     fontSize: FontSize.base,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
   },
   fieldHint: {
     fontSize: FontSize.xs,
-    color: Colors.textTertiary,
     fontFamily: FontFamily.regular,
   },
   successRow: {
@@ -160,11 +152,9 @@ const styles = StyleSheet.create({
   },
   successText: {
     fontSize: FontSize.sm,
-    color: Colors.success,
     fontFamily: FontFamily.semibold,
   },
   saveButton: {
-    backgroundColor: Colors.primary,
     borderRadius: Radius.xl,
     paddingVertical: Spacing.xl,
     alignItems: 'center',
@@ -172,6 +162,5 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
-    color: Colors.white,
   },
 })

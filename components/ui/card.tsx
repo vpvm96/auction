@@ -1,13 +1,13 @@
-import { StyleSheet, View, ViewProps } from 'react-native'
-import { Colors } from '@/constants/colors'
-import { Radius, Shadow, Spacing } from '@/constants/tokens'
+import { StyleSheet, View, type ViewProps } from 'react-native'
+import { useTheme } from '@/hooks/useTheme'
+import { Radius, Spacing } from '@/constants/tokens'
 
 interface CardProps extends ViewProps {
   /** Remove the default horizontal page margin (e.g. when card fills full width) */
   noMargin?: boolean
   /** Add bottom margin between stacked cards (default: true) */
   withGap?: boolean
-  /** Apply subtle shadow instead of flat surface */
+  /** Apply themed shadow instead of flat surface */
   elevated?: boolean
   children: React.ReactNode
 }
@@ -20,13 +20,16 @@ export function Card({
   children,
   ...rest
 }: CardProps) {
+  const theme = useTheme()
+
   return (
     <View
       style={[
         styles.base,
+        { backgroundColor: theme.bg.surface },
         !noMargin && styles.margin,
         withGap && styles.gap,
-        elevated && Shadow.md,
+        elevated && theme.shadow.md,
         style,
       ]}
       {...rest}
@@ -38,7 +41,6 @@ export function Card({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: Colors.card,
     borderRadius: Radius.xl,
     padding: Spacing.xxl,
   },

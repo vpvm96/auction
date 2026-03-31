@@ -3,9 +3,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors } from '@/constants/colors'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useTheme } from '@/hooks/useTheme'
 
 const DELETE_WARNINGS = [
   '관심목록 및 최근 본 물건이 삭제됩니다.',
@@ -15,6 +15,7 @@ const DELETE_WARNINGS = [
 ]
 
 export default function DeleteAccountScreen() {
+  const theme = useTheme()
   const deleteAccount = useAuthStore((s) => s.deleteAccount)
   const [confirmed, setConfirmed] = useState(false)
 
@@ -24,12 +25,12 @@ export default function DeleteAccountScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.navBar}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg.base }]} edges={['top', 'bottom']}>
+      <View style={[styles.navBar, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
         <Pressable onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
         </Pressable>
-        <Text style={styles.navTitle}>회원 탈퇴</Text>
+        <Text style={[styles.navTitle, { color: theme.text.primary }]}>회원 탈퇴</Text>
         <View style={styles.navSpacer} />
       </View>
 
@@ -38,19 +39,19 @@ export default function DeleteAccountScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.warningCard}>
-          <Ionicons name="warning" size={44} color={Colors.warning} />
-          <Text style={styles.warningTitle}>탈퇴 전 확인해주세요</Text>
-          <Text style={styles.warningDesc}>
+        <View style={[styles.warningCard, { backgroundColor: theme.bg.surface }]}>
+          <Ionicons name="warning" size={44} color={theme.status.warning} />
+          <Text style={[styles.warningTitle, { color: theme.text.primary }]}>탈퇴 전 확인해주세요</Text>
+          <Text style={[styles.warningDesc, { color: theme.text.secondary }]}>
             탈퇴하시면 아래 정보가 모두 삭제되며 복구할 수 없습니다.
           </Text>
         </View>
 
-        <View style={styles.infoCard}>
+        <View style={[styles.infoCard, { backgroundColor: theme.bg.surface }]}>
           {DELETE_WARNINGS.map((item, idx) => (
             <View key={idx} style={styles.infoRow}>
-              <View style={styles.infoDot} />
-              <Text style={styles.infoText}>{item}</Text>
+              <View style={[styles.infoDot, { backgroundColor: theme.text.tertiary }]} />
+              <Text style={[styles.infoText, { color: theme.text.secondary }]}>{item}</Text>
             </View>
           ))}
         </View>
@@ -59,18 +60,26 @@ export default function DeleteAccountScreen() {
           style={styles.checkRow}
           onPress={() => setConfirmed((prev) => !prev)}
         >
-          <View style={[styles.checkbox, confirmed ? styles.checkboxChecked : null]}>
+          <View style={[
+            styles.checkbox,
+            { borderColor: theme.border.default, backgroundColor: theme.bg.surface },
+            confirmed ? { backgroundColor: theme.status.danger, borderColor: theme.status.danger } : null,
+          ]}>
             {confirmed ? (
-              <Ionicons name="checkmark" size={14} color={Colors.white} />
+              <Ionicons name="checkmark" size={14} color="#FFFFFF" />
             ) : null}
           </View>
-          <Text style={styles.checkLabel}>
+          <Text style={[styles.checkLabel, { color: theme.text.primary }]}>
             위 내용을 확인하였으며 탈퇴에 동의합니다.
           </Text>
         </Pressable>
 
         <Pressable
-          style={[styles.deleteButton, confirmed ? null : styles.deleteButtonDisabled]}
+          style={[
+            styles.deleteButton,
+            { backgroundColor: theme.status.danger },
+            confirmed ? null : styles.deleteButtonDisabled,
+          ]}
           onPress={handleDelete}
           disabled={!confirmed}
         >
@@ -78,7 +87,7 @@ export default function DeleteAccountScreen() {
         </Pressable>
 
         <Pressable style={styles.cancelLink} onPress={() => router.back()} hitSlop={8}>
-          <Text style={styles.cancelLinkText}>취소</Text>
+          <Text style={[styles.cancelLinkText, { color: theme.text.secondary }]}>취소</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -88,7 +97,6 @@ export default function DeleteAccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   flex: {
     flex: 1,
@@ -98,16 +106,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.xl,
-    backgroundColor: Colors.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
   },
   navTitle: {
     flex: 1,
     textAlign: 'center',
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     marginHorizontal: Spacing.xl,
   },
   navSpacer: {
@@ -120,7 +125,6 @@ const styles = StyleSheet.create({
     gap: Spacing.xxl,
   },
   warningCard: {
-    backgroundColor: Colors.card,
     borderRadius: Radius.xl,
     padding: Spacing.xxxl,
     alignItems: 'center',
@@ -129,17 +133,14 @@ const styles = StyleSheet.create({
   warningTitle: {
     fontSize: FontSize.xl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
   },
   warningDesc: {
     fontSize: FontSize.base,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
     textAlign: 'center',
     lineHeight: 22,
   },
   infoCard: {
-    backgroundColor: Colors.card,
     borderRadius: Radius.xl,
     paddingHorizontal: Spacing.xxl,
     paddingVertical: Spacing.xl,
@@ -154,13 +155,11 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: Colors.textTertiary,
     marginTop: 7,
   },
   infoText: {
     flex: 1,
     fontSize: FontSize.base,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.regular,
     lineHeight: 22,
   },
@@ -174,24 +173,16 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: Radius.sm,
     borderWidth: 2,
-    borderColor: Colors.border,
-    backgroundColor: Colors.card,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: Colors.increase,
-    borderColor: Colors.increase,
   },
   checkLabel: {
     flex: 1,
     fontSize: FontSize.base,
-    color: Colors.textPrimary,
     fontFamily: FontFamily.medium,
     lineHeight: 22,
   },
   deleteButton: {
-    backgroundColor: Colors.increase,
     borderRadius: Radius.xl,
     paddingVertical: Spacing.xl,
     alignItems: 'center',
@@ -202,14 +193,13 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
-    color: Colors.white,
+    color: '#FFFFFF',
   },
   cancelLink: {
     alignItems: 'center',
   },
   cancelLinkText: {
     fontSize: FontSize.sm,
-    color: Colors.textSecondary,
     fontFamily: FontFamily.semibold,
   },
 })
