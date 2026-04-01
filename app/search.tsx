@@ -9,12 +9,12 @@ import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -157,7 +157,6 @@ export default function SearchScreen() {
               />
             ) : null
           }
-          estimatedItemSize={122}
         />
       )}
     </SafeAreaView>

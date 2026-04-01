@@ -109,7 +109,6 @@ export default function LoginScreen() {
                 accessible={true}
                 accessibilityLabel="비밀번호"
                 accessibilityRole="adjustable"
-                accessibilityState={{ secret: true }}
                 accessibilityHint="로그인할 비밀번호를 입력하세요"
                 style={[styles.input, { color: theme.text.primary }]}
                 value={password}

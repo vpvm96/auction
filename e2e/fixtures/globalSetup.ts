@@ -15,11 +15,15 @@ async function globalSetup(config: FullConfig) {
   // Then use it in tests with: use: { storageState: 'auth.json' }
 
   const browser = await chromium.launch();
-  const context = await browser.createContext();
+  const context = await browser.newContext();
   const page = await context.newPage();
 
   // Navigate to app
-  const baseURL = config.use.baseURL || "http://localhost:3000";
+  const projectUse = config.projects[0]?.use;
+  const baseURL =
+    (typeof projectUse?.baseURL === "string"
+      ? projectUse.baseURL
+      : undefined) || "http://localhost:3000";
   await page.goto(baseURL);
 
   // Wait for app to load (optional)

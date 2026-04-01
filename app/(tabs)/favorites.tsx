@@ -1,46 +1,63 @@
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { FlashList } from '@shopify/flash-list'
-import { Ionicons } from '@expo/vector-icons'
-import { FontFamily, FontSize, LineHeight, Spacing } from '@/constants/tokens'
-import { createAuctionRenderItem } from '@/components/auction/render-auction-item'
-import { useFavoritesStore } from '@/lib/store/useFavoritesStore'
-import { useAuctionsByIds } from '@/lib/queries/auctions'
-import { toAuctionItem } from '@/lib/api/auctions'
-import { useTheme } from '@/hooks/useTheme'
+import { createAuctionRenderItem } from "@/components/auction/render-auction-item";
+import { FontFamily, FontSize, LineHeight, Spacing } from "@/constants/tokens";
+import { useTheme } from "@/hooks/useTheme";
+import { toAuctionItem } from "@/lib/api/auctions";
+import { useAuctionsByIds } from "@/lib/queries/auctions";
+import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
+import { Ionicons } from "@expo/vector-icons";
+import { FlashList } from "@shopify/flash-list";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 function EmptyState() {
-  const theme = useTheme()
+  const theme = useTheme();
 
   return (
     <View style={styles.empty}>
       <Ionicons name="heart-outline" size={56} color={theme.text.tertiary} />
-      <Text style={[styles.emptyTitle, { color: theme.text.secondary }]}>관심 물건이 없습니다</Text>
+      <Text style={[styles.emptyTitle, { color: theme.text.secondary }]}>
+        관심 물건이 없습니다
+      </Text>
       <Text style={[styles.emptyDesc, { color: theme.text.tertiary }]}>
-        {'경매 목록에서 마음에 드는 물건에\n하트를 눌러 관심 등록해보세요'}
+        {"경매 목록에서 마음에 드는 물건에\n하트를 눌러 관심 등록해보세요"}
       </Text>
     </View>
-  )
+  );
 }
 
 export default function FavoritesScreen() {
-  const theme = useTheme()
-  const favoriteIds = useFavoritesStore((s) => s.favoriteIds)
-  const toggleFavorite = useFavoritesStore((s) => s.toggle)
-  const favoriteIdArray = Array.from(favoriteIds)
-  const renderItem = createAuctionRenderItem({ favoriteIds, toggleFavorite })
+  const theme = useTheme();
+  const favoriteIds = useFavoritesStore((s) => s.favoriteIds);
+  const toggleFavorite = useFavoritesStore((s) => s.toggle);
+  const favoriteIdArray = Array.from(favoriteIds);
+  const renderItem = createAuctionRenderItem({ favoriteIds, toggleFavorite });
 
-  const results = useAuctionsByIds(favoriteIdArray)
-  const isLoading = results.some((r) => r.isLoading)
+  const results = useAuctionsByIds(favoriteIdArray);
+  const isLoading = results.some((r) => r.isLoading);
   const favoriteItems = results
     .filter((r) => r.data != null)
-    .map((r) => toAuctionItem(r.data!))
+    .map((r) => toAuctionItem(r.data!));
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
-      <View style={[styles.header, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
-        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>관심목록</Text>
-        <Text style={[styles.headerCount, { color: theme.brand.primary }]}>{favoriteItems.length}건</Text>
+    <SafeAreaView
+      style={[styles.safe, { backgroundColor: theme.bg.base }]}
+      edges={["top"]}
+    >
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: theme.bg.surface,
+            borderBottomColor: theme.border.default,
+          },
+        ]}
+      >
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
+          관심목록
+        </Text>
+        <Text style={[styles.headerCount, { color: theme.brand.primary }]}>
+          {favoriteItems.length}건
+        </Text>
       </View>
 
       {isLoading ? (
@@ -57,11 +74,10 @@ export default function FavoritesScreen() {
           extraData={favoriteIds}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          estimatedItemSize={122}
         />
       )}
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -69,8 +85,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: Spacing.page,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -86,8 +102,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   listContent: {
     paddingTop: Spacing.lg,
@@ -95,8 +111,8 @@ const styles = StyleSheet.create({
   },
   empty: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: Spacing.xl,
     paddingBottom: 60,
   },
@@ -106,7 +122,7 @@ const styles = StyleSheet.create({
   },
   emptyDesc: {
     fontSize: FontSize.md,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: LineHeight.tight,
   },
-})
+});

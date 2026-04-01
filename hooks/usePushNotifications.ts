@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
-import { Platform } from "react-native";
+import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import Constants from "expo-constants";
+import { useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 
 interface PushNotificationState {
   expoPushToken: string | null;
@@ -23,7 +23,7 @@ export function usePushNotifications(): PushNotificationState {
     useState<Notifications.Notification | null>(null);
 
   const notificationListener = useRef<Notifications.EventSubscription | null>(
-    null
+    null,
   );
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
@@ -49,12 +49,10 @@ export function usePushNotifications(): PushNotificationState {
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(
-          notificationListener.current
-        );
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
     };
   }, []);
@@ -88,8 +86,7 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
   }
 
   // 기존 권한 상태 확인
-  const { status: existingStatus } =
-    await Notifications.getPermissionsAsync();
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
   // 권한이 없으면 새로 요청

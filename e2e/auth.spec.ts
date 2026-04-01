@@ -29,7 +29,8 @@ test.describe("Authentication E2E", () => {
     await authPage.clickLoginButton();
 
     const error = await authPage.getErrorMessage();
-    await expect(error).toBeVisible();
+    expect(error).not.toBeNull();
+    await expect(error!).toBeVisible();
   });
 
   test("should show validation error for empty password", async () => {
@@ -129,7 +130,8 @@ test.describe("Signup E2E", () => {
     await authPage.clickSignupButton();
 
     const error = await authPage.getErrorMessage();
-    await expect(error).toBeVisible();
+    expect(error).not.toBeNull();
+    await expect(error!).toBeVisible();
   });
 });
 
@@ -154,9 +156,11 @@ test.describe("Forgot Password E2E", () => {
 
   test("should show success message after submission", async () => {
     await authPage.fillEmail("test@example.com");
-    await authPage.getSubmitButton().click();
+    const submitButton = await authPage.getSubmitButton();
+    await submitButton.click();
 
     const successMessage = await authPage.getSuccessMessage();
-    await expect(successMessage).toBeVisible();
+    expect(successMessage).not.toBeNull();
+    await expect(successMessage!).toBeVisible();
   });
 });

@@ -1,11 +1,11 @@
-import "@/global.css";
+import { AuthProvider } from "@/components/providers/auth-provider";
 import { Colors } from "@/constants/colors";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
-import { AuthProvider } from "@/components/providers/auth-provider";
+import "@/global.css";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { useNotificationStore } from "@/lib/store/useNotificationStore";
+import { DevicePlatform, registerDevice } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/store/useAuthStore";
-import { registerDevice, DevicePlatform } from "@/lib/api/auth";
+import { useNotificationStore } from "@/lib/store/useNotificationStore";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Application from "expo-application";
 import { useFonts } from "expo-font";
@@ -22,6 +22,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
     priority: Notifications.AndroidNotificationPriority.HIGH,
@@ -89,12 +91,24 @@ export default function RootLayout() {
 
   // 로그인 상태 + 푸시 토큰이 준비되면 디바이스 등록
   useEffect(() => {
-    if (!hasHydrated || !isLoggedIn || !expoPushToken || deviceRegistered.current) return;
+    if (
+      !hasHydrated ||
+      !isLoggedIn ||
+      !expoPushToken ||
+      deviceRegistered.current
+    )
+      return;
 
     const register = async () => {
       try {
-        const installationId = await Application.getInstallationIdAsync();
-        const platform = Platform.OS === "ios" ? DevicePlatform.iOS : DevicePlatform.Android;
+        const installationId =
+          Platform.OS === "ios"
+            ? ((await Application.getIosIdForVendorAsync()) ??
+              Application.applicationId ??
+              "unknown-ios-device")
+            : Application.getAndroidId();
+        const platform =
+          Platform.OS === "ios" ? DevicePlatform.iOS : DevicePlatform.Android;
 
         await registerDevice({
           platform,

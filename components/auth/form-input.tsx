@@ -2,12 +2,12 @@ import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
 import { useState } from "react";
 import {
-  KeyboardTypeOptions,
-  ReturnKeyTypeOptions,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    KeyboardTypeOptions,
+    ReturnKeyTypeOptions,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
 interface FormInputProps {
@@ -58,7 +58,7 @@ export function FormInput({
           accessible={true}
           accessibilityLabel={label}
           accessibilityRole="adjustable"
-          accessibilityState={{ disabled: false, invalid: error != null }}
+          accessibilityState={{ disabled: false }}
           accessibilityHint={error || placeholder}
           style={[styles.input, { color: theme.text.primary }]}
           value={value}

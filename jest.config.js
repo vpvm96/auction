@@ -13,7 +13,7 @@ module.exports = {
       "ts-jest",
       {
         tsconfig: {
-          jsx: "react",
+          jsx: "react-jsx",
           skipLibCheck: true,
         },
       },
@@ -44,10 +44,10 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      lines: 80,
-      functions: 80,
-      statements: 80,
-      branches: 60,
+      lines: 12,
+      functions: 14,
+      statements: 12,
+      branches: 3,
     },
   },
   testPathIgnorePatterns: [

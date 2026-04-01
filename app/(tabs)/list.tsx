@@ -1,105 +1,131 @@
-import { StyleSheet, Text, View, Pressable, ScrollView, ActivityIndicator } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { FlashList } from '@shopify/flash-list'
-import { useLocalSearchParams } from 'expo-router'
-import { useIsFocused } from '@react-navigation/native'
-import { useState, useEffect, useRef } from 'react'
-import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
-import { createAuctionRenderItem } from '@/components/auction/render-auction-item'
-import { type AuctionType } from '@/lib/mock-data'
-import { useFavoritesStore } from '@/lib/store/useFavoritesStore'
-import { useAuctions } from '@/lib/queries/auctions'
-import { toAuctionItem } from '@/lib/api/auctions'
-import { useTheme } from '@/hooks/useTheme'
+import { createAuctionRenderItem } from "@/components/auction/render-auction-item";
+import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
+import { useTheme } from "@/hooks/useTheme";
+import { toAuctionItem } from "@/lib/api/auctions";
+import { type AuctionType } from "@/lib/mock-data";
+import { useAuctions } from "@/lib/queries/auctions";
+import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
+import { useIsFocused } from "@react-navigation/native";
+import { FlashList } from "@shopify/flash-list";
+import { useLocalSearchParams } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import {
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface FilterTab {
-  type: AuctionType | 'all'
-  label: string
-  category: string | undefined
+  type: AuctionType | "all";
+  label: string;
+  category: string | undefined;
 }
 
 const FILTER_TABS: FilterTab[] = [
-  { type: 'all', label: '전체', category: undefined },
-  { type: 'apartment', label: '아파트', category: '아파트' },
-  { type: 'house', label: '주택', category: '주택' },
-  { type: 'officetel', label: '오피스텔', category: '오피스텔' },
-  { type: 'commercial', label: '상가', category: '상가' },
-  { type: 'land', label: '토지', category: '토지' },
-  { type: 'car', label: '자동차', category: '자동차' },
-  { type: 'equipment', label: '중기', category: '중기' },
-  { type: 'other', label: '기타', category: '기타' },
-]
+  { type: "all", label: "전체", category: undefined },
+  { type: "apartment", label: "아파트", category: "아파트" },
+  { type: "house", label: "주택", category: "주택" },
+  { type: "officetel", label: "오피스텔", category: "오피스텔" },
+  { type: "commercial", label: "상가", category: "상가" },
+  { type: "land", label: "토지", category: "토지" },
+  { type: "car", label: "자동차", category: "자동차" },
+  { type: "equipment", label: "중기", category: "중기" },
+  { type: "other", label: "기타", category: "기타" },
+];
 
-type SortType = 'latest' | 'deadline' | 'price_asc' | 'price_desc'
+type SortType = "latest" | "deadline" | "price_asc" | "price_desc";
 
 interface SortOption {
-  type: SortType
-  label: string
+  type: SortType;
+  label: string;
 }
 
 const SORT_OPTIONS: SortOption[] = [
-  { type: 'latest', label: '최신순' },
-  { type: 'deadline', label: '마감순' },
-  { type: 'price_asc', label: '낮은가격' },
-  { type: 'price_desc', label: '높은가격' },
-]
+  { type: "latest", label: "최신순" },
+  { type: "deadline", label: "마감순" },
+  { type: "price_asc", label: "낮은가격" },
+  { type: "price_desc", label: "높은가격" },
+];
 
 export default function ListScreen() {
-  const theme = useTheme()
-  const params = useLocalSearchParams<{ type?: AuctionType }>()
-  const [selectedType, setSelectedType] = useState<AuctionType | 'all'>(
-    params.type ?? 'all'
-  )
+  const theme = useTheme();
+  const params = useLocalSearchParams<{ type?: AuctionType }>();
+  const [selectedType, setSelectedType] = useState<AuctionType | "all">(
+    params.type ?? "all",
+  );
 
-  const isFocused = useIsFocused()
-  const filterScrollRef = useRef<ScrollView>(null)
-  const tabLayoutsRef = useRef<Record<string, { x: number; width: number }>>({})
+  const isFocused = useIsFocused();
+  const filterScrollRef = useRef<ScrollView>(null);
+  const tabLayoutsRef = useRef<Record<string, { x: number; width: number }>>(
+    {},
+  );
 
   useEffect(() => {
     if (params.type != null) {
-      setSelectedType(params.type)
+      setSelectedType(params.type);
     }
-  }, [params.type])
+  }, [params.type]);
 
   useEffect(() => {
-    const layout = tabLayoutsRef.current[selectedType]
-    if (layout == null || filterScrollRef.current == null) return
+    const layout = tabLayoutsRef.current[selectedType];
+    if (layout == null || filterScrollRef.current == null) return;
 
-    const scrollX = Math.max(0, layout.x - Spacing.page)
-    filterScrollRef.current.scrollTo({ x: scrollX, animated: true })
-  }, [selectedType])
+    const scrollX = Math.max(0, layout.x - Spacing.page);
+    filterScrollRef.current.scrollTo({ x: scrollX, animated: true });
+  }, [selectedType]);
 
-  const [selectedSort, setSelectedSort] = useState<SortType>('latest')
-  const favoriteIds = useFavoritesStore((s) => s.favoriteIds)
-  const toggleFavorite = useFavoritesStore((s) => s.toggle)
-  const renderItem = createAuctionRenderItem({ favoriteIds, toggleFavorite })
+  const [selectedSort, setSelectedSort] = useState<SortType>("latest");
+  const favoriteIds = useFavoritesStore((s) => s.favoriteIds);
+  const toggleFavorite = useFavoritesStore((s) => s.toggle);
+  const renderItem = createAuctionRenderItem({ favoriteIds, toggleFavorite });
 
-  const activeTab = FILTER_TABS.find((t) => t.type === selectedType)
+  const activeTab = FILTER_TABS.find((t) => t.type === selectedType);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useAuctions({ category: activeTab?.category })
+    useAuctions({ category: activeTab?.category });
 
-  const allItems = (data?.pages ?? []).flatMap((p) => p.items.map(toAuctionItem))
+  const allItems = (data?.pages ?? []).flatMap((p) =>
+    p.items.map(toAuctionItem),
+  );
 
-  let sorted = allItems
-  if (selectedSort === 'deadline') {
-    sorted = [...allItems].sort((a, b) => a.auctionDate.localeCompare(b.auctionDate))
-  } else if (selectedSort === 'price_asc') {
-    sorted = [...allItems].sort((a, b) => a.minimumBid - b.minimumBid)
-  } else if (selectedSort === 'price_desc') {
-    sorted = [...allItems].sort((a, b) => b.minimumBid - a.minimumBid)
+  let sorted = allItems;
+  if (selectedSort === "deadline") {
+    sorted = [...allItems].sort((a, b) =>
+      a.auctionDate.localeCompare(b.auctionDate),
+    );
+  } else if (selectedSort === "price_asc") {
+    sorted = [...allItems].sort((a, b) => a.minimumBid - b.minimumBid);
+  } else if (selectedSort === "price_desc") {
+    sorted = [...allItems].sort((a, b) => b.minimumBid - a.minimumBid);
   }
 
   const handleEndReached = () => {
-    if (!isFocused) return
-    if (!hasNextPage || isFetchingNextPage) return
-    fetchNextPage()
-  }
+    if (!isFocused) return;
+    if (!hasNextPage || isFetchingNextPage) return;
+    fetchNextPage();
+  };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
-      <View style={[styles.header, { backgroundColor: theme.bg.surface, borderBottomColor: theme.border.default }]}>
-        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>경매 목록</Text>
+    <SafeAreaView
+      style={[styles.safe, { backgroundColor: theme.bg.base }]}
+      edges={["top"]}
+    >
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: theme.bg.surface,
+            borderBottomColor: theme.border.default,
+          },
+        ]}
+      >
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
+          경매 목록
+        </Text>
       </View>
 
       <ScrollView
@@ -110,58 +136,85 @@ export default function ListScreen() {
         contentContainerStyle={styles.filterContent}
       >
         {FILTER_TABS.map((tab) => {
-          const isActive = selectedType === tab.type
+          const isActive = selectedType === tab.type;
           return (
             <Pressable
               key={tab.type}
               style={[
                 styles.filterTab,
-                { borderColor: isActive ? theme.brand.primary : theme.border.default, backgroundColor: isActive ? theme.brand.primary : theme.bg.surface },
+                {
+                  borderColor: isActive
+                    ? theme.brand.primary
+                    : theme.border.default,
+                  backgroundColor: isActive
+                    ? theme.brand.primary
+                    : theme.bg.surface,
+                },
               ]}
               onPress={() => setSelectedType(tab.type)}
               onLayout={(e) => {
                 tabLayoutsRef.current[tab.type] = {
                   x: e.nativeEvent.layout.x,
                   width: e.nativeEvent.layout.width,
-                }
+                };
               }}
             >
-              <Text style={[
-                styles.filterTabText,
-                { color: isActive ? theme.brand.onPrimary : theme.text.secondary, fontFamily: isActive ? FontFamily.bold : FontFamily.medium },
-              ]}>
+              <Text
+                style={[
+                  styles.filterTabText,
+                  {
+                    color: isActive
+                      ? theme.brand.onPrimary
+                      : theme.text.secondary,
+                    fontFamily: isActive ? FontFamily.bold : FontFamily.medium,
+                  },
+                ]}
+              >
                 {tab.label}
               </Text>
             </Pressable>
-          )
+          );
         })}
       </ScrollView>
 
       <View style={[styles.sortRow, { backgroundColor: theme.bg.base }]}>
         <Text style={[styles.resultCount, { color: theme.text.primary }]}>
-          {isLoading ? '-' : `${sorted.length}건`}
+          {isLoading ? "-" : `${sorted.length}건`}
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.sortOptions}>
             {SORT_OPTIONS.map((opt) => {
-              const isActive = selectedSort === opt.type
+              const isActive = selectedSort === opt.type;
               return (
                 <Pressable
                   key={opt.type}
                   style={[
                     styles.sortButton,
-                    { backgroundColor: isActive ? theme.brand.primaryLight : theme.border.default },
+                    {
+                      backgroundColor: isActive
+                        ? theme.brand.primaryLight
+                        : theme.border.default,
+                    },
                   ]}
                   onPress={() => setSelectedSort(opt.type)}
                 >
-                  <Text style={[
-                    styles.sortButtonText,
-                    { color: isActive ? theme.brand.primary : theme.text.secondary, fontFamily: isActive ? FontFamily.bold : FontFamily.medium },
-                  ]}>
+                  <Text
+                    style={[
+                      styles.sortButtonText,
+                      {
+                        color: isActive
+                          ? theme.brand.primary
+                          : theme.text.secondary,
+                        fontFamily: isActive
+                          ? FontFamily.bold
+                          : FontFamily.medium,
+                      },
+                    ]}
+                  >
                     {opt.label}
                   </Text>
                 </Pressable>
-              )
+              );
             })}
           </View>
         </ScrollView>
@@ -189,11 +242,10 @@ export default function ListScreen() {
               />
             ) : null
           }
-          estimatedItemSize={122}
         />
       )}
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -215,7 +267,7 @@ const styles = StyleSheet.create({
   filterContent: {
     paddingHorizontal: Spacing.page,
     gap: Spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   filterTab: {
     paddingHorizontal: 14,
@@ -227,8 +279,8 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
   },
   sortRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: Spacing.page,
     paddingVertical: Spacing.lg,
     gap: Spacing.xl,
@@ -238,7 +290,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.bold,
   },
   sortOptions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
   },
   sortButton: {
@@ -251,8 +303,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   listContent: {
     paddingTop: Spacing.lg,
@@ -261,4 +313,4 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: Spacing.xl,
   },
-})
+});
