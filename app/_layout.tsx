@@ -4,14 +4,17 @@ import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useNotificationStore } from "@/lib/store/useNotificationStore";
+import { useAuthStore } from "@/lib/store/useAuthStore";
+import { registerDevice, DevicePlatform } from "@/lib/api/auth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import * as Application from "expo-application";
 import { useFonts } from "expo-font";
 import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // 포그라운드 알림 동작 설정
@@ -66,6 +69,9 @@ export default function RootLayout() {
 
   const { expoPushToken } = usePushNotifications();
   const setExpoPushToken = useNotificationStore((s) => s.setExpoPushToken);
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const hasHydrated = useAuthStore((s) => s.hasHydrated);
+  const deviceRegistered = useRef(false);
 
   // 발급된 Expo Push Token을 Zustand 스토어에 저장
   useEffect(() => {
@@ -73,6 +79,38 @@ export default function RootLayout() {
       setExpoPushToken(expoPushToken);
     }
   }, [expoPushToken, setExpoPushToken]);
+
+  // 로그아웃 시 디바이스 등록 플래그 리셋
+  useEffect(() => {
+    if (!isLoggedIn) {
+      deviceRegistered.current = false;
+    }
+  }, [isLoggedIn]);
+
+  // 로그인 상태 + 푸시 토큰이 준비되면 디바이스 등록
+  useEffect(() => {
+    if (!hasHydrated || !isLoggedIn || !expoPushToken || deviceRegistered.current) return;
+
+    const register = async () => {
+      try {
+        const installationId = await Application.getInstallationIdAsync();
+        const platform = Platform.OS === "ios" ? DevicePlatform.iOS : DevicePlatform.Android;
+
+        await registerDevice({
+          platform,
+          deviceIdentifier: installationId,
+          fcmToken: expoPushToken,
+        });
+
+        deviceRegistered.current = true;
+        console.log("[Device] 디바이스 등록 완료");
+      } catch (err) {
+        console.log("[Device] 디바이스 등록 실패:", err);
+      }
+    };
+
+    register();
+  }, [hasHydrated, isLoggedIn, expoPushToken]);
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -93,6 +131,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="auth" />
+            <Stack.Screen name="quiz" />
             <Stack.Screen
               name="region-select"
               options={{ presentation: "modal" }}

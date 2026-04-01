@@ -6,10 +6,15 @@ import {
     Spacing,
 } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
+import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export function QuizBanner() {
   const theme = useTheme();
+
+  const handlePress = () => {
+    router.push('/quiz')
+  }
 
   return (
     <View
@@ -28,6 +33,7 @@ export function QuizBanner() {
             accessibilityLabel="퀴즈 풀러가기"
             accessibilityRole="button"
             style={[styles.button, { backgroundColor: theme.brand.primary }]}
+            onPress={handlePress}
           >
             <Text style={[styles.buttonText, { color: theme.brand.onPrimary }]}>
               퀴즈 풀러가기

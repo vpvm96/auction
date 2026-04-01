@@ -111,6 +111,7 @@ export async function apiClient<T>(
         throw new ApiError(retryResponse.status, body)
       }
 
+      if (retryResponse.status === 204) return undefined as T
       return retryResponse.json() as Promise<T>
     } catch {
       throw new ApiError(401, 'Authentication failed')
@@ -122,6 +123,7 @@ export async function apiClient<T>(
     throw new ApiError(response.status, body)
   }
 
+  if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
 }
 

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { zustandStorage } from '@/lib/store/storage'
@@ -25,7 +26,7 @@ interface AuthStore {
   setHasHydrated: (value: boolean) => void
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   clearError: () => void
   updateProfile: (name: string) => void
   deleteAccount: () => void
@@ -131,8 +132,14 @@ export const useAuthStore = create<AuthStore>()(
           }
         },
 
-        logout: () => {
-          removeAccessToken()
+        logout: async () => {
+          try {
+            await authApi.logout()
+          } catch {
+            // 서버 로그아웃 실패해도 로컬 정리는 진행
+          }
+          await removeAccessToken()
+          await AsyncStorage.clear()
           set({ user: null, isLoggedIn: false, error: null })
         },
 

@@ -13,6 +13,19 @@ export interface RegisterRequest {
   password: string
 }
 
+export interface RegisterDeviceRequest {
+  platform: DevicePlatform
+  deviceIdentifier: string
+  fcmToken: string
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+export enum DevicePlatform {
+  iOS = 1,
+  Android = 2,
+}
+
 // ─── Response Types ──────────────────────────────────────────────────────────
 
 export interface LoginResponse {
@@ -48,5 +61,18 @@ export function register(body: RegisterRequest): Promise<RegisterResponse> {
     method: 'POST',
     body: JSON.stringify(body),
     skipAuth: true,
+  })
+}
+
+export function registerDevice(body: RegisterDeviceRequest): Promise<void> {
+  return apiClient<void>('/hammers/hammer-users/auth/device', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function logout(): Promise<void> {
+  await apiClient<void>('/hammers/hammer-users/auth/logout', {
+    method: 'POST',
   })
 }
