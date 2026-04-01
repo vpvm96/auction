@@ -25,9 +25,6 @@ module.exports = {
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   collectCoverageFrom: [
-    "app/**/*.{ts,tsx}",
-    "components/**/*.{ts,tsx}",
-    "hooks/**/*.{ts,tsx}",
     "lib/**/*.{ts,tsx}",
     "!**/*.d.ts",
     "!**/node_modules/**",
@@ -44,10 +41,10 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      lines: 11,
-      functions: 13,
-      statements: 11,
-      branches: 3,
+      lines: 60,
+      functions: 60,
+      statements: 60,
+      branches: 40,
     },
   },
   testPathIgnorePatterns: [

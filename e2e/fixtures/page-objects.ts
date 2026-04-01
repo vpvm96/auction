@@ -816,3 +816,6 @@ export async function logout(page: Page) {
     // Already logged out
   }
 }
+
+// Alias for backward compatibility
+export { AuthPage as LoginPage };
