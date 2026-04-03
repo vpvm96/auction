@@ -4,6 +4,7 @@ import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import "@/global.css";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { DevicePlatform, registerDevice } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { useNotificationStore } from "@/lib/store/useNotificationStore";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -35,7 +36,10 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
-      retry: 2,
+      retry: (failureCount, error) => {
+        if (error instanceof ApiError && error.status === 401) return false;
+        return failureCount < 2;
+      },
     },
   },
 });

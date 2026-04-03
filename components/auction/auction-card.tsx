@@ -9,9 +9,11 @@ import { useTheme } from "@/hooks/useTheme";
 import { formatPrice, formatShortDate } from "@/lib/format";
 import type { AuctionItem } from "@/lib/mock-data";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
+import { Image, type ImageSource } from "expo-image";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
+const EMPTY_IMAGE = require("@/assets/images/empty/auction_empty_image.webp");
 
 interface AuctionCardProps {
   id: string;
@@ -88,7 +90,9 @@ export function AuctionCard({
       {/* 썸네일 */}
       <View style={styles.thumbnailWrap}>
         <Image
-          source={{ uri: thumbnailUrl }}
+          source={
+            thumbnailUrl ? ({ uri: thumbnailUrl } as ImageSource) : EMPTY_IMAGE
+          }
           style={styles.thumbnail}
           contentFit="cover"
           transition={200}

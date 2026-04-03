@@ -15,9 +15,11 @@ import { useAuctionDetail } from "@/lib/queries/auctions";
 import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
 import { useRecentlyViewedStore } from "@/lib/store/useRecentlyViewedStore";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
+import { Image, type ImageSource } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+
+const EMPTY_IMAGE = require("@/assets/images/empty/auction_empty_image.webp");
 import {
     ActivityIndicator,
     Pressable,
@@ -289,7 +291,11 @@ export default function DetailScreen() {
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <Image
-          source={{ uri: auction.thumbnailUrl }}
+          source={
+            auction.thumbnailUrl
+              ? ({ uri: auction.thumbnailUrl } as ImageSource)
+              : EMPTY_IMAGE
+          }
           style={[styles.heroImage, { backgroundColor: theme.bg.sunken }]}
           contentFit="cover"
         />

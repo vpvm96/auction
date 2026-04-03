@@ -32,9 +32,14 @@ export async function removeAccessToken(): Promise<void> {
 
 type LogoutCallback = () => void
 let _onForceLogout: LogoutCallback | null = null
+let _isLoggingOut = false
 
 export function setForceLogoutCallback(cb: LogoutCallback) {
   _onForceLogout = cb
+}
+
+export function resetForceLogoutFlag() {
+  _isLoggingOut = false
 }
 
 // ─── Refresh 중복 호출 방지 ──────────────────────────────────────────────────
@@ -61,7 +66,10 @@ async function tryRefreshToken(): Promise<string> {
       return data.accessToken
     } catch (error) {
       await removeAccessToken()
-      _onForceLogout?.()
+      if (!_isLoggingOut) {
+        _isLoggingOut = true
+        _onForceLogout?.()
+      }
       throw error
     } finally {
       _refreshPromise = null

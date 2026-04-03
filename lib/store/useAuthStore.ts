@@ -8,6 +8,7 @@ import {
   setAccessToken,
   removeAccessToken,
   setForceLogoutCallback,
+  resetForceLogoutFlag,
   ApiError,
 } from '@/lib/api/client'
 
@@ -68,6 +69,7 @@ export const useAuthStore = create<AuthStore>()(
             const res = await authApi.login({ email, password })
             await setAccessToken(res.accessToken)
 
+            resetForceLogoutFlag()
             set({
               isLoading: false,
               isLoggedIn: true,
@@ -111,6 +113,7 @@ export const useAuthStore = create<AuthStore>()(
             const loginRes = await authApi.login({ email, password })
             await setAccessToken(loginRes.accessToken)
 
+            resetForceLogoutFlag()
             set({
               isLoading: false,
               isLoggedIn: true,
