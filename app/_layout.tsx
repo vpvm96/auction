@@ -13,7 +13,7 @@ import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -41,6 +41,12 @@ const queryClient = new QueryClient({
 });
 
 SplashScreen.preventAutoHideAsync();
+
+// 스플래시 스크린 페이드 아웃 애니메이션 설정 (Android/iOS 공통)
+SplashScreen.setOptions({
+  duration: 800,
+  fade: true,
+});
 
 export function ErrorBoundary({
   error,
@@ -126,13 +132,26 @@ export default function RootLayout() {
     register();
   }, [hasHydrated, isLoggedIn, expoPushToken]);
 
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
+  // 스플래시 스크린 최소 표시 시간 보장 (리소스 로딩이 너무 빠를 때 깜빡임 방지)
+  const [minTimePassed, setMinTimePassed] = useState(false);
 
-  if (!fontsLoaded) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinTimePassed(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 폰트 로딩 + 인증 hydration + 최소 표시 시간 모두 충족 시 스플래시 해제
+  const appIsReady = fontsLoaded && hasHydrated && minTimePassed;
+
+  useEffect(() => {
+    if (appIsReady) {
+      SplashScreen.hide();
+    }
+  }, [appIsReady]);
+
+  if (!appIsReady) {
     return null;
   }
 
