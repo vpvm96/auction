@@ -13,7 +13,8 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "appleTeamId": "237J435Z7F"
     },
     "android": {
       "package": "com.hb.auction",

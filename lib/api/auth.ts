@@ -16,7 +16,7 @@ export interface RegisterRequest {
 export interface RegisterDeviceRequest {
   platform: DevicePlatform
   deviceIdentifier: string
-  fcmToken: string
+  pushToken: string
 }
 
 // ─── Enums ───────────────────────────────────────────────────────────────────

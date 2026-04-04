@@ -123,7 +123,7 @@ export default function RootLayout() {
         await registerDevice({
           platform,
           deviceIdentifier: installationId,
-          fcmToken: expoPushToken,
+          pushToken: expoPushToken,
         });
 
         deviceRegistered.current = true;
