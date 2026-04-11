@@ -4,8 +4,11 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
+    "start:dev-client": "expo start --dev-client --clear",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios:release": "expo run:ios --configuration Release",
+    "ios:release:device": "expo run:ios --device --configuration Release",
     "web": "expo start --web --port 3000",
     "lint": "expo lint",
     "test": "jest",

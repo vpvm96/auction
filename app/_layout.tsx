@@ -2,8 +2,8 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { Colors } from "@/constants/colors";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import "@/global.css";
-import { useIsDark } from "@/hooks/useTheme";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useIsDark } from "@/hooks/useTheme";
 import { DevicePlatform, registerDevice } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/useAuthStore";
@@ -11,14 +11,24 @@ import { useNotificationStore } from "@/lib/store/useNotificationStore";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Application from "expo-application";
 import { useFonts } from "expo-font";
+import { Image } from "expo-image";
 import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import LottieView from "lottie-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+// 네이티브 모듈 미설치 시 앱 크래시를 방지하기 위한 안전한 로딩
+let LottieView: typeof import("lottie-react-native").default | null = null;
+try {
+  LottieView = require("lottie-react-native").default;
+} catch {
+  LottieView = null;
+}
+
+type SplashPhase = "lottie" | "done";
 
 // 포그라운드 알림 동작 설정
 // 앱이 켜져 있는 상태에서도 시스템 상단바 배너 알림이 노출되도록 설정
@@ -48,9 +58,9 @@ const queryClient = new QueryClient({
 
 SplashScreen.preventAutoHideAsync();
 
-// 스플래시 스크린 페이드 아웃 애니메이션 설정 (Android/iOS 공통)
+// 네이티브 스플래시 → Lottie 전환을 빠르게 하기 위해 짧은 페이드 설정
 SplashScreen.setOptions({
-  duration: 800,
+  duration: 200,
   fade: true,
 });
 
@@ -142,22 +152,47 @@ export default function RootLayout() {
   // 폰트 로딩 + 인증 hydration 완료 시 앱 준비
   const appIsReady = fontsLoaded && hasHydrated;
 
-  // Lottie 애니메이션 상태 (웹에서는 Lottie 미지원 → 즉시 완료 처리)
-  const lottieRef = useRef<LottieView>(null);
-  const [lottieFinished, setLottieFinished] = useState(Platform.OS === "web");
+  // LottieView가 로드되지 않았으면 Lottie 단계를 건너뜀
+  const lottieAvailable = LottieView != null;
 
-  // 폰트 로드 완료 시 네이티브 스플래시 페이드 아웃 → 완료 후 Lottie 시작
+  // Lottie 사용 가능하면 바로 lottie 단계로 시작 (정적 이미지 깜빡임 방지)
+  const [splashPhase, setSplashPhase] = useState<SplashPhase>(
+    Platform.OS === "web" || !lottieAvailable ? "done" : "lottie",
+  );
+  const lottieFallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const finishSplash = () => {
+    if (lottieFallbackTimerRef.current) {
+      clearTimeout(lottieFallbackTimerRef.current);
+      lottieFallbackTimerRef.current = null;
+    }
+    setSplashPhase("done");
+  };
+
+  // 폰트 로드 완료 후 네이티브 스플래시를 숨기고 Lottie 폴백 타이머 설정
   useEffect(() => {
     if (!fontsLoaded) return;
-    Promise.resolve(SplashScreen.hide()).then(() => {
-      if (Platform.OS !== "web") {
-        lottieRef.current?.play();
-      }
-    });
-  }, [fontsLoaded]);
 
-  // Lottie + 앱 준비가 모두 완료될 때 스플래시 오버레이 제거
-  const showLottieSplash = !lottieFinished || !appIsReady;
+    Promise.resolve(SplashScreen.hide()).then(() => {
+      if (Platform.OS === "web" || !lottieAvailable) return;
+
+      lottieFallbackTimerRef.current = setTimeout(() => {
+        finishSplash();
+      }, 2600);
+    });
+
+    return () => {
+      if (lottieFallbackTimerRef.current) {
+        clearTimeout(lottieFallbackTimerRef.current);
+        lottieFallbackTimerRef.current = null;
+      }
+    };
+  }, [fontsLoaded, lottieAvailable]);
+
+  // 앱 준비 + Lottie 단계 완료 시 스플래시 제거
+  const showSplashOverlay = splashPhase !== "done" || !appIsReady;
 
   if (!fontsLoaded) {
     return null;
@@ -181,16 +216,26 @@ export default function RootLayout() {
             </Stack>
           </AuthProvider>
         )}
-        {showLottieSplash && Platform.OS !== "web" && (
-          <View style={styles.lottieContainer}>
-            <LottieView
-              ref={lottieRef}
-              source={require("@/assets/lottie/splash-lottie.json")}
-              autoPlay={false}
-              loop={false}
-              onAnimationFinish={() => setLottieFinished(true)}
-              style={styles.lottieView}
-            />
+        {showSplashOverlay && Platform.OS !== "web" && (
+          <View style={styles.splashOverlayContainer}>
+            {splashPhase === "lottie" && LottieView != null ? (
+              <LottieView
+                source={require("@/assets/lottie/splash-lottie.json")}
+                autoPlay={true}
+                loop={false}
+                onAnimationFinish={finishSplash}
+                style={styles.splashOverlayImage}
+              />
+            ) : (
+              <Image
+                source={require("@/assets/images/splash-icon.png")}
+                style={styles.splashOverlayImage}
+                contentFit="contain"
+                accessible={true}
+                accessibilityRole="image"
+                accessibilityLabel="앱 시작 스플래시 이미지"
+              />
+            )}
           </View>
         )}
       </GestureHandlerRootView>
@@ -202,13 +247,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  lottieContainer: {
+  splashOverlayContainer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.background,
+    backgroundColor: "#ffffff",
     justifyContent: "center",
     alignItems: "center",
   },
-  lottieView: {
+  splashOverlayImage: {
     width: "100%",
     height: "100%",
   },

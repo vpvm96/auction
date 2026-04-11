@@ -2,7 +2,7 @@
   "expo": {
     "name": "property-auction",
     "slug": "property-auction",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "scheme": "propertyauction",
     "icon": "./assets/images/icon.png",
