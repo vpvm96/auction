@@ -2,6 +2,7 @@ import { AuthProvider } from "@/components/providers/auth-provider";
 import { Colors } from "@/constants/colors";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import "@/global.css";
+import { useIsDark } from "@/hooks/useTheme";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { DevicePlatform, registerDevice } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
@@ -14,6 +15,7 @@ import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import LottieView from "lottie-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -136,45 +138,61 @@ export default function RootLayout() {
     register();
   }, [hasHydrated, isLoggedIn, expoPushToken]);
 
-  // 스플래시 스크린 최소 표시 시간 보장 (리소스 로딩이 너무 빠를 때 깜빡임 방지)
-  const [minTimePassed, setMinTimePassed] = useState(false);
+  const isDark = useIsDark();
+  // 폰트 로딩 + 인증 hydration 완료 시 앱 준비
+  const appIsReady = fontsLoaded && hasHydrated;
 
+  // Lottie 애니메이션 상태 (웹에서는 Lottie 미지원 → 즉시 완료 처리)
+  const lottieRef = useRef<LottieView>(null);
+  const [lottieFinished, setLottieFinished] = useState(Platform.OS === "web");
+
+  // 폰트 로드 완료 시 네이티브 스플래시 페이드 아웃 → 완료 후 Lottie 시작
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMinTimePassed(true);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!fontsLoaded) return;
+    Promise.resolve(SplashScreen.hide()).then(() => {
+      if (Platform.OS !== "web") {
+        lottieRef.current?.play();
+      }
+    });
+  }, [fontsLoaded]);
 
-  // 폰트 로딩 + 인증 hydration + 최소 표시 시간 모두 충족 시 스플래시 해제
-  const appIsReady = fontsLoaded && hasHydrated && minTimePassed;
+  // Lottie + 앱 준비가 모두 완료될 때 스플래시 오버레이 제거
+  const showLottieSplash = !lottieFinished || !appIsReady;
 
-  useEffect(() => {
-    if (appIsReady) {
-      SplashScreen.hide();
-    }
-  }, [appIsReady]);
-
-  if (!appIsReady) {
+  if (!fontsLoaded) {
     return null;
   }
 
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={styles.root}>
-        <StatusBar style="dark" />
-        <AuthProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="notifications" />
-            <Stack.Screen name="auth" />
-            <Stack.Screen name="quiz" />
-            <Stack.Screen
-              name="region-select"
-              options={{ presentation: "modal" }}
+        <StatusBar style={isDark ? "light" : "dark"} />
+        {appIsReady && (
+          <AuthProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="notifications" />
+              <Stack.Screen name="auth" />
+              <Stack.Screen name="quiz" />
+              <Stack.Screen
+                name="region-select"
+                options={{ presentation: "modal" }}
+              />
+            </Stack>
+          </AuthProvider>
+        )}
+        {showLottieSplash && Platform.OS !== "web" && (
+          <View style={styles.lottieContainer}>
+            <LottieView
+              ref={lottieRef}
+              source={require("@/assets/lottie/splash-lottie.json")}
+              autoPlay={false}
+              loop={false}
+              onAnimationFinish={() => setLottieFinished(true)}
+              style={styles.lottieView}
             />
-          </Stack>
-        </AuthProvider>
+          </View>
+        )}
       </GestureHandlerRootView>
     </QueryClientProvider>
   );
@@ -183,6 +201,16 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  lottieContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: Colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  lottieView: {
+    width: "100%",
+    height: "100%",
   },
   errorContainer: {
     flex: 1,

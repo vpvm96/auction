@@ -2,9 +2,10 @@
   "expo": {
     "name": "property-auction",
     "slug": "property-auction",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "scheme": "propertyauction",
+    "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -36,6 +37,14 @@
           "dark": {
             "image": "./assets/images/splash-icon.png",
             "backgroundColor": "#1A1B1E"
+          },
+          "android": {
+            "icon": "./assets/images/splash-icon.png",
+            "iconBackgroundColor": "#ffffff",
+            "dark": {
+              "icon": "./assets/images/splash-icon.png",
+              "iconBackgroundColor": "#1A1B1E"
+            }
           }
         }
       ],

@@ -17,15 +17,37 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 // Mock React Query
 jest.mock("@tanstack/react-query", () => {
   const actual = jest.requireActual("@tanstack/react-query");
+  const queryClientMock = {
+    invalidateQueries: jest.fn(),
+    setQueryData: jest.fn(),
+    getQueryData: jest.fn(),
+  };
   return {
     ...actual,
-    useQuery: jest.fn(),
-    useMutation: jest.fn(),
-    useInfiniteQuery: jest.fn(),
+    useQuery: jest.fn(() => ({
+      data: null,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    })),
+    useMutation: jest.fn(() => ({
+      mutate: jest.fn(),
+      isPending: false,
+      error: null,
+    })),
+    useInfiniteQuery: jest.fn(() => ({
+      data: null,
+      isLoading: false,
+      isError: false,
+      error: null,
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+    })),
     QueryClientProvider: function QueryClientProvider({ children }) {
       return children;
     },
-    useQueryClient: jest.fn(() => ({})),
+    useQueryClient: jest.fn(() => queryClientMock),
   };
 });
 

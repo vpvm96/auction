@@ -11,4 +11,12 @@ describe("Users API", () => {
   it("should export fetchUser function", () => {
     expect(typeof usersApi.fetchUser).toBe("function");
   });
+
+  it("should export fetchCurrentUser function", () => {
+    expect(typeof usersApi.fetchCurrentUser).toBe("function");
+  });
+
+  it("should export updateCurrentUser function", () => {
+    expect(typeof usersApi.updateCurrentUser).toBe("function");
+  });
 });

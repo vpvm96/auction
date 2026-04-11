@@ -71,6 +71,13 @@ describe("Auctions API detailed", () => {
     expect(result.type).toBe("other");
   });
 
+  it("should convert latest trade amount from 만원 to 원", () => {
+    const input = createKamcoAuction({ latestTradeAmount: "14500" });
+    const result = toAuctionItem(input);
+
+    expect(result.latestTradeAmount).toBe(145000000);
+  });
+
   it("should handle zero appraisal amount", () => {
     const input = createKamcoAuction({ apslAsesAvgAmt: 0, minBidPrc: 1000 });
     const result = toAuctionItem(input);

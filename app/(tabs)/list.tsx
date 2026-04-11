@@ -1,4 +1,5 @@
 import { createAuctionRenderItem } from "@/components/auction/render-auction-item";
+import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
 import { toAuctionItem } from "@/lib/api/auctions";
@@ -50,6 +51,12 @@ const SORT_OPTIONS: SortOption[] = [
   { type: "price_asc", label: "낮은가격" },
   { type: "price_desc", label: "높은가격" },
 ];
+
+const ESTIMATED_AUCTION_CARD_HEIGHT = 176;
+
+function getAuctionItemType() {
+  return "auction-card";
+}
 
 export default function ListScreen() {
   const theme = useTheme();
@@ -126,6 +133,7 @@ export default function ListScreen() {
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
           경매 목록
         </Text>
+        <ThemeToggleButton />
       </View>
 
       <ScrollView
@@ -229,6 +237,12 @@ export default function ListScreen() {
           data={sorted}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
+          getItemType={getAuctionItemType}
+          estimatedItemSize={ESTIMATED_AUCTION_CARD_HEIGHT}
+          overrideItemLayout={(_, item) => {
+            item.size = ESTIMATED_AUCTION_CARD_HEIGHT;
+          }}
+          drawDistance={800}
           extraData={favoriteIds}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
@@ -253,6 +267,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.page,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,

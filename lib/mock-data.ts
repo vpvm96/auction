@@ -15,6 +15,18 @@ export interface AuctionItem {
   area: number
   thumbnailUrl: string
   imageUrls: string[]
+  /** 투자등급 (예: "A+", "A", "B", "C") */
+  investmentRating?: string
+  /** 투자 종합 점수 */
+  investmentScore?: number
+  /** 시세 괴리율 — 음수 = 시세 대비 저렴 (예: -18.5) */
+  marketGapRate?: number
+  /** 시세 괴리 등급 */
+  marketGapGrade?: string
+  /** 최근 실거래가 (원) */
+  latestTradeAmount?: number
+  /** 최근 실거래 날짜 */
+  latestTradeDate?: string
 }
 
 export interface AuctionStats {

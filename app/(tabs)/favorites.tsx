@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 
 function EmptyState() {
   const theme = useTheme();
@@ -52,12 +53,15 @@ export default function FavoritesScreen() {
           },
         ]}
       >
-        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
-          관심목록
-        </Text>
-        <Text style={[styles.headerCount, { color: theme.brand.primary }]}>
-          {favoriteItems.length}건
-        </Text>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
+            관심목록
+          </Text>
+          <Text style={[styles.headerCount, { color: theme.brand.primary }]}>
+            {favoriteItems.length}건
+          </Text>
+        </View>
+        <ThemeToggleButton />
       </View>
 
       {isLoading ? (
@@ -87,9 +91,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.page,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "baseline",
     gap: Spacing.md,
   },
   headerTitle: {

@@ -29,6 +29,12 @@ interface AuctionCardProps {
   thumbnailUrl: string;
   isFavorited: boolean;
   onToggleFavorite: (id: string) => void;
+  /** 투자등급 (A+, A, B, C 등) */
+  investmentRating?: string;
+  /** 시세 괴리율 — 음수 = 시세보다 저렴 */
+  marketGapRate?: number;
+  /** 최근 실거래가 (원) */
+  latestTradeAmount?: number;
 }
 
 export function AuctionCard({
@@ -44,6 +50,9 @@ export function AuctionCard({
   thumbnailUrl,
   isFavorited,
   onToggleFavorite,
+  investmentRating,
+  marketGapRate,
+  latestTradeAmount,
 }: AuctionCardProps) {
   const theme = useTheme();
 
@@ -71,11 +80,38 @@ export function AuctionCard({
   // 바 너비는 최대 100%로 클램프
   const barWidth = `${Math.min(bidRatio, 100)}%` as const;
 
+  // 투자등급 뱃지 색상
+  const ratingColor =
+    investmentRating === "A+" || investmentRating === "S"
+      ? theme.status.success
+      : investmentRating === "A"
+        ? theme.brand.primary
+        : investmentRating === "B"
+          ? theme.status.warning
+          : theme.text.tertiary;
+  const ratingBg =
+    investmentRating === "A+" || investmentRating === "S"
+      ? theme.status.successBg
+      : investmentRating === "A"
+        ? theme.brand.primaryLight
+        : investmentRating === "B"
+          ? theme.status.warningBg
+          : theme.border.subtle;
+
+  // 시세 괴리율 표시
+  const gapLabel =
+    marketGapRate != null
+      ? `시세 ${marketGapRate > 0 ? "+" : ""}${marketGapRate.toFixed(1)}%`
+      : null;
+  const gapColor =
+    marketGapRate != null && marketGapRate < 0
+      ? theme.status.success
+      : theme.text.tertiary;
+
   return (
     <Pressable
       accessible={true}
       accessibilityLabel={`${title}, ${address}, 최저입찰가 ${formatPrice(minimumBid)}`}
-      accessibilityRole="button"
       accessibilityHint={`입찰률 ${bidRatio}%, ${failedBids > 0 ? `${failedBids}회 유찰` : "첫 경매"}`}
       style={[
         styles.container,
@@ -111,7 +147,7 @@ export function AuctionCard({
 
       {/* 정보 영역 */}
       <View style={styles.info}>
-        {/* 상단: 제목 + 찜 버튼 */}
+        {/* 상단: 제목 + 투자등급 + 찜 버튼 */}
         <View style={styles.topRow}>
           <Text
             style={[styles.title, { color: theme.text.primary }]}
@@ -119,15 +155,30 @@ export function AuctionCard({
           >
             {title}
           </Text>
-          <Pressable onPress={handleFavorite} hitSlop={HIT_SLOP}>
+          {investmentRating != null ? (
+            <View
+              style={[
+                styles.ratingBadge,
+                { backgroundColor: ratingBg },
+              ]}
+            >
+              <Text style={[styles.ratingBadgeText, { color: ratingColor }]}>
+                {investmentRating}
+              </Text>
+            </View>
+          ) : null}
+          <Pressable
+            onPress={handleFavorite}
+            hitSlop={HIT_SLOP}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={isFavorited ? "찜 해제" : "찜하기"}
+            accessibilityHint={`${title} ${isFavorited ? "찜 해제하기" : "찜하기"}`}
+          >
             <Ionicons
               name={isFavorited ? "heart" : "heart-outline"}
               size={20}
               color={isFavorited ? theme.auction.hot : theme.text.tertiary}
-              accessible={true}
-              accessibilityLabel={isFavorited ? "찜 해제" : "찜하기"}
-              accessibilityRole="button"
-              accessibilityHint={`${title} ${isFavorited ? "찜 해제하기" : "찜하기"}`}
             />
           </Pressable>
         </View>
@@ -160,10 +211,25 @@ export function AuctionCard({
           </Text>
         </View>
 
-        {/* 감정가 */}
-        <Text style={[styles.appraisalPrice, { color: theme.text.tertiary }]}>
-          감정가 {formatPrice(appraisalPrice)}
-        </Text>
+        {/* 시세 괴리율 */}
+        {gapLabel != null ? (
+          <Text style={[styles.gapRate, { color: gapColor }]}>
+            {gapLabel}
+          </Text>
+        ) : null}
+
+        {/* 감정가 · 최근 실거래가 */}
+        <View style={styles.priceInfoRow}>
+          <Text style={[styles.appraisalPrice, { color: theme.text.tertiary }]}>
+            감정가 {formatPrice(appraisalPrice)}
+          </Text>
+          {latestTradeAmount != null && latestTradeAmount > 0 ? (
+            <Text style={[styles.appraisalPrice, { color: theme.text.tertiary }]}>
+              {" · "}
+              실거래 {formatPrice(latestTradeAmount)}
+            </Text>
+          ) : null}
+        </View>
 
         {/* 메타 정보: 일자 + 면적 */}
         <View style={styles.metaRow}>
@@ -280,6 +346,24 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.bold,
     minWidth: 32,
     textAlign: "right",
+  },
+  ratingBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
+  },
+  ratingBadgeText: {
+    fontSize: FontSize.xxs,
+    fontFamily: FontFamily.bold,
+  },
+  gapRate: {
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.semibold,
+  },
+  priceInfoRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
   },
   appraisalPrice: {
     fontSize: FontSize.xs,

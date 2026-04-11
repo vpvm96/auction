@@ -8,8 +8,14 @@ import {
     Spacing,
 } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
-import type { RealEstateTrade } from "@/lib/api/auctions";
+import type {
+  RecentTrade,
+  MarketGap,
+  InvestmentScore,
+  BidPriceGuide,
+} from "@/lib/api/auctions";
 import { toAuctionItem } from "@/lib/api/auctions";
+import type { ColorTheme } from "@/constants/theme";
 import { formatFullDate, formatPrice } from "@/lib/format";
 import { useAuctionDetail } from "@/lib/queries/auctions";
 import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
@@ -38,6 +44,27 @@ interface InfoRowProps {
 interface AddressInfoRowProps {
   label: string;
   value: string;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function gradeColors(grade: string, theme: ColorTheme) {
+  switch (grade?.toUpperCase()) {
+    case "S":
+      return { text: theme.status.success, bg: theme.status.successBg };
+    case "A":
+      return { text: theme.status.info, bg: theme.status.infoBg };
+    case "B":
+      return { text: theme.status.warning, bg: theme.status.warningBg };
+    default:
+      return { text: theme.status.danger, bg: theme.status.dangerBg };
+  }
+}
+
+function ratingColor(rating: string, theme: ColorTheme): string {
+  if (rating === "상") return theme.status.success;
+  if (rating === "중") return theme.status.warning;
+  return theme.status.danger;
 }
 
 function splitAddressLines(value: string): string[] {
@@ -135,33 +162,251 @@ function InfoRow({ label, value }: InfoRowProps) {
 }
 
 interface TradeRowProps {
-  trade: RealEstateTrade;
+  trade: RecentTrade;
 }
 
 function TradeRow({ trade }: TradeRowProps) {
   const theme = useTheme();
+  const tradeDate = `${trade.dealYear}.${trade.dealMonth}.${trade.dealDay}`;
+  const tradeAmount = trade.dealAmount * 10000;
 
   return (
     <View style={styles.tradeRow}>
       <View style={styles.tradeInfo}>
         <Text style={[styles.tradeDate, { color: theme.text.tertiary }]}>
-          {trade.tradeDate}
+          {tradeDate}
         </Text>
         <Text
           style={[styles.tradeAddress, { color: theme.text.secondary }]}
           numberOfLines={1}
         >
-          {trade.address}
+          {trade.umdNm} {trade.jibun}
         </Text>
       </View>
       <View style={styles.tradeRight}>
         <Text style={[styles.tradePrice, { color: theme.text.primary }]}>
-          {formatPrice(trade.tradeAmount)}
+          {formatPrice(tradeAmount)}
         </Text>
         <Text style={[styles.tradeArea, { color: theme.text.tertiary }]}>
           {trade.area}㎡
         </Text>
       </View>
+    </View>
+  );
+}
+
+const SCORE_LABELS: {
+  key: keyof InvestmentScore;
+  label: string;
+  max: number;
+}[] = [
+  { key: "marketGapScore", label: "시장 갭", max: 30 },
+  { key: "priceTrendScore", label: "가격 추세", max: 20 },
+  { key: "discountDepthScore", label: "할인 깊이", max: 15 },
+  { key: "appraisalDiscountScore", label: "감정 할인", max: 15 },
+  { key: "competitionScore", label: "경쟁도", max: 10 },
+  { key: "liquidityScore", label: "유동성", max: 10 },
+];
+
+interface MarketGapSectionProps {
+  marketGap: MarketGap;
+}
+
+function MarketGapSection({ marketGap }: MarketGapSectionProps) {
+  const theme = useTheme();
+  const gradeClr = gradeColors(marketGap.grade, theme);
+
+  return (
+    <View style={[styles.section, { backgroundColor: theme.bg.surface }]}>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>
+          시장 갭 분석
+        </Text>
+        <View style={[styles.gradeBadge, { backgroundColor: gradeClr.bg }]}>
+          <Text style={[styles.gradeBadgeText, { color: gradeClr.text }]}>
+            {marketGap.grade}등급
+          </Text>
+        </View>
+      </View>
+
+      <View style={[styles.highlightCard, { backgroundColor: theme.bg.sunken }]}>
+        <View style={styles.highlightRow}>
+          <View style={styles.highlightItem}>
+            <Text style={[styles.highlightLabel, { color: theme.text.tertiary }]}>
+              갭 비율
+            </Text>
+            <Text style={[styles.highlightValue, { color: gradeClr.text }]}>
+              {marketGap.gapRate.toFixed(1)}%
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.highlightDivider,
+              { backgroundColor: theme.border.default },
+            ]}
+          />
+          <View style={styles.highlightItem}>
+            <Text style={[styles.highlightLabel, { color: theme.text.tertiary }]}>
+              시장 가중 평균가
+            </Text>
+            <Text style={[styles.highlightValue, { color: theme.text.primary }]}>
+              {formatPrice(marketGap.weightedMarketPrice)}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <InfoRow
+        label="참고 거래"
+        value={`${marketGap.usedTradeCount}건 / 전체 ${marketGap.tradeCount}건`}
+      />
+      <InfoRow label="신뢰도" value={marketGap.confidence} />
+    </View>
+  );
+}
+
+interface InvestmentScoreSectionProps {
+  score: InvestmentScore;
+}
+
+function InvestmentScoreSection({ score }: InvestmentScoreSectionProps) {
+  const theme = useTheme();
+  const ratingClr = ratingColor(score.rating, theme);
+
+  return (
+    <View style={[styles.section, { backgroundColor: theme.bg.surface }]}>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>
+          투자 점수
+        </Text>
+        <View style={styles.scoreChip}>
+          <Text style={[styles.scoreTotalText, { color: theme.text.primary }]}>
+            {score.totalScore}점
+          </Text>
+          <Text style={[styles.scoreRatingText, { color: ratingClr }]}>
+            {score.rating}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.scoreBarContainer}>
+        {SCORE_LABELS.map(({ key, label, max }) => {
+          const val = score[key] as number;
+          const ratio = Math.min(val / max, 1);
+          return (
+            <View key={key} style={styles.scoreBarRow}>
+              <Text
+                style={[styles.scoreBarLabel, { color: theme.text.secondary }]}
+              >
+                {label}
+              </Text>
+              <View
+                style={[
+                  styles.scoreBarTrack,
+                  { backgroundColor: theme.bg.sunken },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.scoreBarFill,
+                    {
+                      width: `${ratio * 100}%` as `${number}%`,
+                      backgroundColor: theme.brand.primary,
+                    },
+                  ]}
+                />
+              </View>
+              <Text
+                style={[styles.scoreBarValue, { color: theme.text.primary }]}
+              >
+                {val}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+interface BidPriceGuideSectionProps {
+  guide: BidPriceGuide;
+}
+
+function BidPriceGuideSection({ guide }: BidPriceGuideSectionProps) {
+  const theme = useTheme();
+
+  return (
+    <View style={[styles.section, { backgroundColor: theme.bg.surface }]}>
+      <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>
+        입찰가 가이드
+      </Text>
+
+      <View style={[styles.bidGuideCard, { backgroundColor: theme.bg.sunken }]}>
+        <View style={styles.bidGuideRow}>
+          <View style={styles.bidGuideItem}>
+            <Text style={[styles.bidGuideLabel, { color: theme.text.tertiary }]}>
+              보수적
+            </Text>
+            <Text style={[styles.bidGuideValue, { color: theme.status.info }]}>
+              {formatPrice(guide.conservativeBid)}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.bidGuideDivider,
+              { backgroundColor: theme.border.default },
+            ]}
+          />
+          <View style={styles.bidGuideItem}>
+            <Text style={[styles.bidGuideLabel, { color: theme.text.tertiary }]}>
+              중간
+            </Text>
+            <Text
+              style={[styles.bidGuideValue, { color: theme.status.success }]}
+            >
+              {formatPrice(guide.moderateBid)}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.bidGuideDivider,
+              { backgroundColor: theme.border.default },
+            ]}
+          />
+          <View style={styles.bidGuideItem}>
+            <Text style={[styles.bidGuideLabel, { color: theme.text.tertiary }]}>
+              적극적
+            </Text>
+            <Text style={[styles.bidGuideValue, { color: theme.auction.hot }]}>
+              {formatPrice(guide.aggressiveBid)}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View
+        style={[
+          styles.guidanceBox,
+          {
+            backgroundColor: theme.brand.primarySubtle,
+            borderColor: theme.border.brand,
+          },
+        ]}
+      >
+        <Ionicons
+          name="information-circle-outline"
+          size={16}
+          color={theme.text.brand}
+        />
+        <Text style={[styles.guidanceText, { color: theme.text.brand }]}>
+          {guide.guidance}
+        </Text>
+      </View>
+
+      <InfoRow label="취득세율" value={`${guide.acquisitionTaxRate}%`} />
+      <InfoRow label="명도비용율" value={`${guide.evictionCostRate}%`} />
+      <InfoRow label="기타비용율" value={`${guide.miscCostRate}%`} />
     </View>
   );
 }
@@ -350,18 +595,46 @@ export default function DetailScreen() {
               >
                 투자 분석
               </Text>
-              <InfoRow
-                label="할인율"
-                value={`${investmentAnalysis.discountRate}%`}
-              />
-              <InfoRow
-                label="평당가"
-                value={formatPrice(investmentAnalysis.pricePerArea)}
-              />
-              <InfoRow
-                label="예상수익률"
-                value={`${investmentAnalysis.estimatedYield}%`}
-              />
+              {investmentAnalysis.investmentScore != null ? (
+                <>
+                  <InfoRow
+                    label="투자 등급"
+                    value={investmentAnalysis.investmentScore.rating}
+                  />
+                  <InfoRow
+                    label="종합 점수"
+                    value={`${investmentAnalysis.investmentScore.totalScore}점`}
+                  />
+                </>
+              ) : null}
+              {investmentAnalysis.marketGap != null ? (
+                <>
+                  <InfoRow
+                    label="시세 괴리율"
+                    value={`${investmentAnalysis.marketGap.gapRate}%`}
+                  />
+                  <InfoRow
+                    label="시세 가중평균"
+                    value={formatPrice(investmentAnalysis.marketGap.weightedMarketPrice)}
+                  />
+                </>
+              ) : null}
+              {investmentAnalysis.bidPriceGuide != null ? (
+                <>
+                  <InfoRow
+                    label="보수적 입찰가"
+                    value={formatPrice(investmentAnalysis.bidPriceGuide.conservativeBid)}
+                  />
+                  <InfoRow
+                    label="적정 입찰가"
+                    value={formatPrice(investmentAnalysis.bidPriceGuide.moderateBid)}
+                  />
+                  <InfoRow
+                    label="공격적 입찰가"
+                    value={formatPrice(investmentAnalysis.bidPriceGuide.aggressiveBid)}
+                  />
+                </>
+              ) : null}
             </View>
           </>
         ) : null}
@@ -378,7 +651,7 @@ export default function DetailScreen() {
                 주변 실거래가
               </Text>
               {recentTrades.map((trade, index) => (
-                <TradeRow key={`${trade.tradeDate}-${index}`} trade={trade} />
+                <TradeRow key={`${trade.dealYear}-${trade.dealMonth}-${index}`} trade={trade} />
               ))}
             </View>
           </>
@@ -608,5 +881,131 @@ const styles = StyleSheet.create({
   ctaText: {
     fontSize: FontSize.lg,
     fontFamily: FontFamily.bold,
+  },
+  // Section header with badge
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.xs,
+  },
+  gradeBadge: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.sm,
+  },
+  gradeBadgeText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.bold,
+  },
+  // Highlight card (market gap)
+  highlightCard: {
+    borderRadius: Radius.xl,
+    padding: Spacing.xxl,
+  },
+  highlightRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  highlightItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  highlightDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 40,
+    marginHorizontal: Spacing.xxl,
+  },
+  highlightLabel: {
+    fontSize: FontSize.xs,
+  },
+  highlightValue: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.bold,
+  },
+  // Score chip
+  scoreChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  scoreTotalText: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.bold,
+  },
+  scoreRatingText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.semibold,
+  },
+  // Score bars
+  scoreBarContainer: {
+    gap: Spacing.lg,
+  },
+  scoreBarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.lg,
+  },
+  scoreBarLabel: {
+    fontSize: FontSize.sm,
+    width: 60,
+    flexShrink: 0,
+  },
+  scoreBarTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: Radius.full,
+    overflow: "hidden",
+  },
+  scoreBarFill: {
+    height: "100%",
+    borderRadius: Radius.full,
+  },
+  scoreBarValue: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.semibold,
+    width: 24,
+    textAlign: "right",
+  },
+  // Bid price guide
+  bidGuideCard: {
+    borderRadius: Radius.xl,
+    padding: Spacing.xxl,
+  },
+  bidGuideRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  bidGuideItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  bidGuideDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 40,
+    marginHorizontal: Spacing.sm,
+  },
+  bidGuideLabel: {
+    fontSize: FontSize.xs,
+  },
+  bidGuideValue: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.bold,
+    textAlign: "center",
+  },
+  guidanceBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: Spacing.sm,
+    padding: Spacing.xl,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+  },
+  guidanceText: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    lineHeight: 18,
   },
 });

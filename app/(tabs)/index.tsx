@@ -12,6 +12,7 @@ import { NewsBanner } from '@/components/home/news-banner'
 import { QuizBanner } from '@/components/home/quiz-banner'
 import { MOCK_STATS, MOCK_NOTIFICATIONS } from '@/lib/mock-data'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
+import { ThemeToggleButton } from '@/components/ui/theme-toggle-button'
 
 function getTodayLabel(): string {
   const d = new Date()
@@ -76,6 +77,9 @@ function Header() {
       <Pressable style={styles.iconButton} onPress={handleSearchPress}>
         <Ionicons name="search-outline" size={22} color={theme.text.secondary} />
       </Pressable>
+
+      {/* 테마 토글 */}
+      <ThemeToggleButton />
 
       {/* 알림 버튼 */}
       <Pressable style={styles.bellButton} onPress={handleNotificationPress}>

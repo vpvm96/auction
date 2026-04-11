@@ -25,6 +25,9 @@ export function createAuctionRenderItem({
       thumbnailUrl={item.thumbnailUrl}
       isFavorited={favoriteIds.has(item.id)}
       onToggleFavorite={toggleFavorite}
+      investmentRating={item.investmentRating}
+      marketGapRate={item.marketGapRate}
+      latestTradeAmount={item.latestTradeAmount}
     />
   );
   renderItem.displayName = "AuctionRenderItem";
