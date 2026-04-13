@@ -52,8 +52,6 @@ const SORT_OPTIONS: SortOption[] = [
   { type: "price_desc", label: "높은가격" },
 ];
 
-const ESTIMATED_AUCTION_CARD_HEIGHT = 176;
-
 function getAuctionItemType() {
   return "auction-card";
 }
@@ -238,10 +236,6 @@ export default function ListScreen() {
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           getItemType={getAuctionItemType}
-          estimatedItemSize={ESTIMATED_AUCTION_CARD_HEIGHT}
-          overrideItemLayout={(_, item) => {
-            item.size = ESTIMATED_AUCTION_CARD_HEIGHT;
-          }}
           drawDistance={800}
           extraData={favoriteIds}
           contentContainerStyle={styles.listContent}

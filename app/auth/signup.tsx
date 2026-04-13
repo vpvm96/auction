@@ -90,6 +90,10 @@ export default function SignupScreen() {
   const setters = [setName, setEmail, setPassword, setConfirmPassword];
 
   useEffect(() => {
+    clearError();
+  }, [clearError]);
+
+  useEffect(() => {
     if (isLoggedIn) {
       router.replace("/(tabs)");
     }

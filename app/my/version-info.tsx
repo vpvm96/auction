@@ -1,13 +1,14 @@
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
 import { Ionicons } from "@expo/vector-icons";
+import * as Application from "expo-application";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const APP_VERSION = "1.0.0";
-const BUILD_NUMBER = "100";
+const APP_VERSION = Application.nativeApplicationVersion ?? "–";
+const BUILD_NUMBER = Application.nativeBuildVersion ?? "–";
 
 const INFO_ROWS = [
   { label: "앱 버전", value: APP_VERSION },

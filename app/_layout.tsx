@@ -23,6 +23,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 // 네이티브 모듈 미설치 시 앱 크래시를 방지하기 위한 안전한 로딩
 let LottieView: typeof import("lottie-react-native").default | null = null;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   LottieView = require("lottie-react-native").default;
 } catch {
   LottieView = null;

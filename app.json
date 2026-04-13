@@ -31,20 +31,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
           "backgroundColor": "#ffffff",
           "dark": {
-            "image": "./assets/images/splash-icon.png",
-            "backgroundColor": "#1A1B1E"
-          },
-          "android": {
-            "icon": "./assets/images/splash-icon.png",
-            "iconBackgroundColor": "#ffffff",
-            "dark": {
-              "icon": "./assets/images/splash-icon.png",
-              "iconBackgroundColor": "#1A1B1E"
-            }
+            "backgroundColor": "#ffffff"
           }
         }
       ],

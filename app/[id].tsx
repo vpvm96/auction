@@ -7,6 +7,7 @@ import {
     Radius,
     Spacing,
 } from "@/constants/tokens";
+import type { ColorTheme } from "@/constants/theme";
 import { useTheme } from "@/hooks/useTheme";
 import type {
   RecentTrade,
@@ -15,7 +16,6 @@ import type {
   BidPriceGuide,
 } from "@/lib/api/auctions";
 import { toAuctionItem } from "@/lib/api/auctions";
-import type { ColorTheme } from "@/constants/theme";
 import { formatFullDate, formatPrice } from "@/lib/format";
 import { useAuctionDetail } from "@/lib/queries/auctions";
 import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
@@ -24,8 +24,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image, type ImageSource } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-
-const EMPTY_IMAGE = require("@/assets/images/empty/auction_empty_image.webp");
 import {
     ActivityIndicator,
     Pressable,
@@ -35,6 +33,8 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const EMPTY_IMAGE = require("@/assets/images/empty/auction_empty_image.webp");
 
 interface InfoRowProps {
   label: string;
@@ -584,58 +584,22 @@ export default function DetailScreen() {
           <InfoRow label="유찰횟수" value={`${auction.failedBids}회`} />
         </View>
 
-        {investmentAnalysis != null ? (
+        {investmentAnalysis?.investmentScore != null ? (
           <>
             <Divider variant="section" />
-            <View
-              style={[styles.section, { backgroundColor: theme.bg.surface }]}
-            >
-              <Text
-                style={[styles.sectionTitle, { color: theme.text.primary }]}
-              >
-                투자 분석
-              </Text>
-              {investmentAnalysis.investmentScore != null ? (
-                <>
-                  <InfoRow
-                    label="투자 등급"
-                    value={investmentAnalysis.investmentScore.rating}
-                  />
-                  <InfoRow
-                    label="종합 점수"
-                    value={`${investmentAnalysis.investmentScore.totalScore}점`}
-                  />
-                </>
-              ) : null}
-              {investmentAnalysis.marketGap != null ? (
-                <>
-                  <InfoRow
-                    label="시세 괴리율"
-                    value={`${investmentAnalysis.marketGap.gapRate}%`}
-                  />
-                  <InfoRow
-                    label="시세 가중평균"
-                    value={formatPrice(investmentAnalysis.marketGap.weightedMarketPrice)}
-                  />
-                </>
-              ) : null}
-              {investmentAnalysis.bidPriceGuide != null ? (
-                <>
-                  <InfoRow
-                    label="보수적 입찰가"
-                    value={formatPrice(investmentAnalysis.bidPriceGuide.conservativeBid)}
-                  />
-                  <InfoRow
-                    label="적정 입찰가"
-                    value={formatPrice(investmentAnalysis.bidPriceGuide.moderateBid)}
-                  />
-                  <InfoRow
-                    label="공격적 입찰가"
-                    value={formatPrice(investmentAnalysis.bidPriceGuide.aggressiveBid)}
-                  />
-                </>
-              ) : null}
-            </View>
+            <InvestmentScoreSection score={investmentAnalysis.investmentScore} />
+          </>
+        ) : null}
+        {investmentAnalysis?.marketGap != null ? (
+          <>
+            <Divider variant="section" />
+            <MarketGapSection marketGap={investmentAnalysis.marketGap} />
+          </>
+        ) : null}
+        {investmentAnalysis?.bidPriceGuide != null ? (
+          <>
+            <Divider variant="section" />
+            <BidPriceGuideSection guide={investmentAnalysis.bidPriceGuide} />
           </>
         ) : null}
 

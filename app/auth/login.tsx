@@ -34,6 +34,10 @@ export default function LoginScreen() {
   const clearError = useAuthStore((s) => s.clearError);
 
   useEffect(() => {
+    clearError();
+  }, [clearError]);
+
+  useEffect(() => {
     if (isLoggedIn) {
       router.replace("/(tabs)");
     }
