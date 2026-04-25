@@ -3,7 +3,7 @@ import { Colors } from "@/constants/colors";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import "@/global.css";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { useIsDark } from "@/hooks/useTheme";
+import { useIsDark, useTheme } from "@/hooks/useTheme";
 import { DevicePlatform, registerDevice } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/useAuthStore";
@@ -162,6 +162,7 @@ export default function RootLayout() {
   }, [hasHydrated, isLoggedIn, expoPushToken]);
 
   const isDark = useIsDark();
+  const theme = useTheme();
   // 폰트 로딩 + 인증 hydration 완료 시 앱 준비
   const appIsReady = fontsLoaded && hasHydrated;
 
@@ -213,7 +214,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={styles.root}>
+      <GestureHandlerRootView style={[styles.root, { backgroundColor: theme.bg.base }]}>
         <StatusBar style={isDark ? "light" : "dark"} />
         {appIsReady && (
           <AuthProvider>

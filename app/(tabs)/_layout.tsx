@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import { StyleSheet } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/hooks/useTheme'
 import { FontFamily } from '@/constants/tokens'
 
@@ -18,6 +19,8 @@ function TabIcon({ name, focused, color }: TabIconProps) {
 
 export default function TabLayout() {
   const theme = useTheme()
+  const insets = useSafeAreaInsets()
+  const bottomInset = Math.min(insets.bottom, 12)
 
   return (
     <Tabs
@@ -28,6 +31,8 @@ export default function TabLayout() {
           {
             backgroundColor: theme.bg.surface,
             borderTopColor: theme.border.default,
+            height: 64 + bottomInset,
+            paddingBottom: 10 + bottomInset,
           },
         ],
         tabBarActiveTintColor: theme.brand.primary,
@@ -47,10 +52,23 @@ export default function TabLayout() {
       <Tabs.Screen
         name="list"
         options={{
-          title: '경매목록',
+          title: '공매물건',
           tabBarIcon: ({ focused, color }) => (
             <TabIcon
-              name={focused ? 'list' : 'list-outline'}
+              name={focused ? 'hammer' : 'hammer-outline'}
+              focused={focused}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="institution"
+        options={{
+          title: '기관공매',
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon
+              name={focused ? 'business' : 'business-outline'}
               focused={focused}
               color={color}
             />
@@ -90,8 +108,6 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    height: 64,
-    paddingBottom: 10,
     paddingTop: 6,
   },
   tabLabel: {

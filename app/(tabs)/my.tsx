@@ -70,14 +70,6 @@ export default function MyScreen() {
           <View
             style={[styles.loginBanner, { backgroundColor: theme.bg.surface }]}
           >
-            <View
-              style={[
-                styles.avatarCircle,
-                { backgroundColor: theme.border.default },
-              ]}
-            >
-              <Ionicons name="person" size={32} color={theme.brand.primary} />
-            </View>
             <View style={styles.loginText}>
               <Text style={[styles.loginTitle, { color: theme.text.primary }]}>
                 {displayName || "프로필 정보 없음"}
@@ -110,14 +102,6 @@ export default function MyScreen() {
           <View
             style={[styles.loginBanner, { backgroundColor: theme.bg.surface }]}
           >
-            <View
-              style={[
-                styles.avatarCircle,
-                { backgroundColor: theme.border.default },
-              ]}
-            >
-              <Ionicons name="person" size={32} color={theme.text.tertiary} />
-            </View>
             <View style={styles.loginText}>
               <Text style={[styles.loginTitle, { color: theme.text.primary }]}>
                 로그인이 필요합니다
@@ -289,13 +273,6 @@ const styles = StyleSheet.create({
     padding: Spacing.xxl,
     marginBottom: Spacing.md,
     gap: Spacing.xl,
-  },
-  avatarCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
   },
   loginText: {
     flex: 1,

@@ -1,10 +1,11 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  clearRecentSearchTerms,
   fetchPopularSearchTerms,
   fetchRecentSearchTerms,
   searchAuctions,
 } from '@/lib/api/search'
-import type { SearchAuctionsParams } from '@/lib/api/search'
+import type { ClearRecentSearchParams, SearchAuctionsParams } from '@/lib/api/search'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { queryKeys } from './keys'
 
@@ -64,5 +65,17 @@ export function useRecentSearchTerms(
     enabled: isLoggedIn && options?.enabled !== false,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
+  })
+}
+
+/** DELETE /search/recent — 내 최근 검색어 전체 삭제 후 캐시 무효화 */
+export function useClearRecentSearchTerms() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (params: ClearRecentSearchParams = {}) => clearRecentSearchTerms(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.search.all })
+    },
   })
 }
