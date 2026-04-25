@@ -3,6 +3,7 @@ import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -20,14 +21,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const LOGO = require("@/assets/images/logo/hb_acution_cutout.png");
 
+const SAVED_EMAIL_KEY = "auth.savedEmail";
+
 export default function LoginScreen() {
   const theme = useTheme();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberEmail, setRememberEmail] = useState(false);
 
   const login = useAuthStore((s) => s.login);
+  const oauthLogin = useAuthStore((s) => s.oauthLogin);
   const isLoading = useAuthStore((s) => s.isLoading);
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const error = useAuthStore((s) => s.error);
@@ -38,6 +43,15 @@ export default function LoginScreen() {
   }, [clearError]);
 
   useEffect(() => {
+    AsyncStorage.getItem(SAVED_EMAIL_KEY).then((saved) => {
+      if (saved != null && saved.length > 0) {
+        setEmail(saved);
+        setRememberEmail(true);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
     if (isLoggedIn) {
       router.replace("/(tabs)");
     }
@@ -45,11 +59,19 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     clearError();
+    if (rememberEmail) {
+      await AsyncStorage.setItem(SAVED_EMAIL_KEY, email);
+    } else {
+      await AsyncStorage.removeItem(SAVED_EMAIL_KEY);
+    }
     await login(email, password);
   };
 
-  const handleSocialLogin = () => {
-    // SNS 로그인 미구현 (목업)
+  const handleSocialLogin = async (
+    provider: "kakao" | "naver" | "google" | "apple",
+  ) => {
+    clearError();
+    await oauthLogin(provider);
   };
 
   return (
@@ -151,18 +173,42 @@ export default function LoginScreen() {
             </Text>
           ) : null}
 
-          <Pressable
-            accessible={true}
-            accessibilityLabel="비밀번호 찾기"
-            accessibilityRole="button"
-            style={styles.forgotLink}
-            onPress={() => router.push("/auth/forgot-password")}
-            hitSlop={8}
-          >
-            <Text style={[styles.forgotText, { color: theme.brand.primary }]}>
-              비밀번호를 잊으셨나요?
-            </Text>
-          </Pressable>
+          <View style={styles.optionsRow}>
+            <Pressable
+              accessible={true}
+              accessibilityLabel="아이디 저장"
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: rememberEmail }}
+              style={styles.rememberRow}
+              onPress={() => setRememberEmail((prev) => !prev)}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={rememberEmail ? "checkbox" : "square-outline"}
+                size={20}
+                color={
+                  rememberEmail ? theme.brand.primary : theme.text.tertiary
+                }
+              />
+              <Text
+                style={[styles.rememberText, { color: theme.text.secondary }]}
+              >
+                아이디 저장
+              </Text>
+            </Pressable>
+
+            <Pressable
+              accessible={true}
+              accessibilityLabel="비밀번호 찾기"
+              accessibilityRole="button"
+              onPress={() => router.push("/auth/forgot-password")}
+              hitSlop={8}
+            >
+              <Text style={[styles.forgotText, { color: theme.brand.primary }]}>
+                비밀번호를 잊으셨나요?
+              </Text>
+            </Pressable>
+          </View>
 
           <Pressable
             accessible={true}
@@ -209,22 +255,24 @@ export default function LoginScreen() {
             <SocialLoginButton
               provider="kakao"
               variant="icon"
-              onPress={handleSocialLogin}
+              onPress={() => handleSocialLogin("kakao")}
             />
             <SocialLoginButton
               provider="naver"
               variant="icon"
-              onPress={handleSocialLogin}
+              onPress={() => handleSocialLogin("naver")}
             />
-            <SocialLoginButton
-              provider="apple"
-              variant="icon"
-              onPress={handleSocialLogin}
-            />
+            {Platform.OS === "ios" ? (
+              <SocialLoginButton
+                provider="apple"
+                variant="icon"
+                onPress={() => handleSocialLogin("apple")}
+              />
+            ) : null}
             <SocialLoginButton
               provider="google"
               variant="icon"
-              onPress={handleSocialLogin}
+              onPress={() => handleSocialLogin("google")}
             />
           </View>
 
@@ -287,10 +335,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: Spacing.xl,
   },
-  forgotLink: {
-    alignSelf: "flex-end",
+  optionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: Spacing.xxl,
     marginBottom: 28,
+  },
+  rememberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  rememberText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.medium,
   },
   forgotText: {
     fontSize: FontSize.sm,

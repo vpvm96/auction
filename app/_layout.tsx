@@ -29,6 +29,18 @@ try {
   LottieView = null;
 }
 
+// Kakao SDK 초기화 — 앱 시작 시 1회 실행
+try {
+  const kakaoNativeAppKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY;
+  if (kakaoNativeAppKey != null && kakaoNativeAppKey.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { initializeKakaoSDK } = require("@react-native-seoul/kakao-login");
+    initializeKakaoSDK(kakaoNativeAppKey);
+  }
+} catch (err) {
+  console.warn("Kakao SDK 초기화 실패:", err);
+}
+
 type SplashPhase = "lottie" | "done";
 
 // 포그라운드 알림 동작 설정

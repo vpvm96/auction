@@ -25,11 +25,23 @@ function getWeekDates(): { dayLabel: string; date: number; fullDate: Date }[] {
 /** 경매가 있는 날짜 인덱스 (목~토에 몰리는 실제 패턴 반영) */
 const AUCTION_DAYS = new Set([3, 4, 5]) // 목·금·토 (0=월)
 
-interface DateSelectorProps {
-  onDateChange?: (date: Date) => void
+function toLocalDateKey(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
-export function DateSelector({ onDateChange }: DateSelectorProps) {
+interface DateSelectorProps {
+  onDateChange?: (date: Date) => void
+  /**
+   * API `GET /calendar/schedules` 기준 경매가 있는 날짜(yyyy-MM-dd).
+   * 전달 시 해당 날짜에만 도트 표시. 미전달 시 요일 목업(`AUCTION_DAYS`) 사용.
+   */
+  scheduleDateKeys?: Set<string>
+}
+
+export function DateSelector({ onDateChange, scheduleDateKeys }: DateSelectorProps) {
   const theme = useTheme()
   const weekDates = getWeekDates()
   const today = new Date()
@@ -60,7 +72,10 @@ export function DateSelector({ onDateChange }: DateSelectorProps) {
           const isSelected = selectedDate === date
           const isToday = date === todayDate
           const isPast = fullDate < today && !isToday
-          const hasAuction = AUCTION_DAYS.has(i)
+          const hasAuction =
+            scheduleDateKeys != null
+              ? scheduleDateKeys.has(toLocalDateKey(fullDate))
+              : AUCTION_DAYS.has(i)
 
           return (
             <Pressable

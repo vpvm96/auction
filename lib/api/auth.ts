@@ -19,11 +19,26 @@ export interface RegisterDeviceRequest {
   pushToken: string
 }
 
+export interface OAuthLoginRequest {
+  provider: OAuthProvider
+  token: string
+  nickname: string | null
+  agreeToTerms: boolean | null
+}
+
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
 export enum DevicePlatform {
   iOS = 1,
   Android = 2,
+}
+
+// 백엔드와 정수 매핑이 일치해야 한다. 변경 시 hobom-system.com 백엔드 팀과 확인.
+export enum OAuthProvider {
+  Kakao = 1,
+  Naver = 2,
+  Google = 3,
+  Apple = 4,
 }
 
 // ─── Response Types ──────────────────────────────────────────────────────────
@@ -45,6 +60,15 @@ export function login(body: LoginRequest): Promise<LoginResponse> {
     method: 'POST',
     body: JSON.stringify(body),
     skipAuth: true,
+  })
+}
+
+export function oauthLogin(body: OAuthLoginRequest): Promise<LoginResponse> {
+  return apiClient<LoginResponse>('/hammers/hammer-users/auth/oauth', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    skipAuth: true,
+    credentials: 'include',
   })
 }
 

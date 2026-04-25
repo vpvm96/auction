@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "property-auction",
+    "name": "HB Auction",
     "slug": "property-auction",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "scheme": "propertyauction",
     "icon": "./assets/images/icon.png",
@@ -12,8 +12,32 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.hb.auction",
       "googleServicesFile": "./GoogleService-Info.plist",
+      "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.130075379854-lpo3f3qt31ivjbibv418mbuvsgbo2cht"
+            ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "kakao72400ba60e1a208bb3ff065e46ee276a"
+            ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "hbauction"
+            ]
+          }
+        ],
+        "LSApplicationQueriesSchemes": [
+          "kakaokompassauth",
+          "kakaolink",
+          "naversearchapp",
+          "naversearchthirdlogin"
+        ]
       },
       "appleTeamId": "237J435Z7F"
     },
@@ -28,6 +52,38 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.130075379854-lpo3f3qt31ivjbibv418mbuvsgbo2cht"
+        }
+      ],
+      [
+        "@react-native-seoul/kakao-login",
+        {
+          "kakaoAppKey": "72400ba60e1a208bb3ff065e46ee276a"
+        }
+      ],
+      [
+        "@react-native-seoul/naver-login",
+        {
+          "urlScheme": "hbauction",
+          "consumerKey": "NZZYZQrjbqr0i6cNGaiq",
+          "consumerSecret": "bneeYyv1OH",
+          "appName": "HB Auction"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraMavenRepos": [
+              "https://devrepo.kakao.com/nexus/content/groups/public/"
+            ]
+          }
+        }
+      ],
       [
         "expo-splash-screen",
         {

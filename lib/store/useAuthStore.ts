@@ -11,6 +11,11 @@ import {
   resetForceLogoutFlag,
   ApiError,
 } from '@/lib/api/client'
+import {
+  signInWithProvider,
+  OAuthSignInError,
+  type SocialProviderKey,
+} from '@/lib/auth/oauth'
 
 interface AuthUser {
   id?: string
@@ -26,6 +31,7 @@ interface AuthStore {
   hasHydrated: boolean
   setHasHydrated: (value: boolean) => void
   login: (email: string, password: string) => Promise<void>
+  oauthLogin: (provider: SocialProviderKey) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
@@ -83,6 +89,47 @@ export const useAuthStore = create<AuthStore>()(
                   : `로그인에 실패했습니다. (${err.status})`
                 : '네트워크 오류가 발생했습니다.'
 
+            set({ isLoading: false, error: message })
+          }
+        },
+
+        oauthLogin: async (provider: SocialProviderKey) => {
+          set({ isLoading: true, error: null })
+
+          try {
+            const result = await signInWithProvider(provider)
+
+            const loginRes = await authApi.oauthLogin({
+              provider: result.provider,
+              token: result.token,
+              nickname: result.nickname,
+              agreeToTerms: true,
+            })
+            await setAccessToken(loginRes.accessToken)
+
+            resetForceLogoutFlag()
+            set({
+              isLoading: false,
+              isLoggedIn: true,
+              user: {
+                name: result.nickname ?? provider,
+                email: '',
+              },
+            })
+          } catch (err) {
+            let message = '소셜 로그인에 실패했습니다.'
+            if (err instanceof OAuthSignInError) {
+              if (err.code === 'CANCELLED') {
+                set({ isLoading: false, error: null })
+                return
+              }
+              message = err.message
+            } else if (err instanceof ApiError) {
+              message =
+                err.status === 409
+                  ? '이미 다른 방식으로 가입된 계정입니다.'
+                  : `소셜 로그인에 실패했습니다. (${err.status})`
+            }
             set({ isLoading: false, error: message })
           }
         },

@@ -10,8 +10,13 @@ import { CategoryGrid } from '@/components/home/category-grid'
 import { DateSelector } from '@/components/home/date-selector'
 import { NewsBanner } from '@/components/home/news-banner'
 import { QuizBanner } from '@/components/home/quiz-banner'
+import { dashboardSummaryToAuctionStats } from '@/lib/api/dashboard'
+import type { AuctionStats } from '@/lib/mock-data'
 import { MOCK_STATS, MOCK_NOTIFICATIONS } from '@/lib/mock-data'
+import { useCalendarSchedules } from '@/lib/queries/calendar'
+import { useDashboardSummary } from '@/lib/queries/dashboard'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 import { ThemeToggleButton } from '@/components/ui/theme-toggle-button'
 
 function getTodayLabel(): string {
@@ -26,12 +31,12 @@ function getTodayLabel(): string {
 const LOGO_BG_LIGHT = '#F0F0F5'
 const LOGO_BG_DARK = '#2A2A3A'
 
-function Header() {
+function Header({ auctionStats }: { auctionStats: AuctionStats }) {
   const theme = useTheme()
   const isDark = useIsDark()
   const readIds = useNotificationStore((s) => s.readIds)
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !readIds.has(n.id)).length
-  const totalAuctions = MOCK_STATS.realEstate.count + MOCK_STATS.personal.count
+  const totalAuctions = auctionStats.realEstate.count + auctionStats.personal.count
 
   const handleSearchPress = () => {
     router.push('/search')
@@ -96,19 +101,40 @@ function Header() {
 
 export default function HomeScreen() {
   const theme = useTheme()
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
+  const now = new Date()
+  const calendarParams = { year: now.getFullYear(), month: now.getMonth() + 1 }
+
+  const dashboardQuery = useDashboardSummary()
+  const calendarQuery = useCalendarSchedules(calendarParams)
+
+  const auctionStats: AuctionStats =
+    isLoggedIn && dashboardQuery.data != null
+      ? dashboardSummaryToAuctionStats(dashboardQuery.data)
+      : MOCK_STATS
+
+  const scheduleDateKeys = isLoggedIn
+    ? (() => {
+        const cal = calendarQuery.data
+        if (cal == null) return new Set<string>()
+        return new Set(
+          Object.keys(cal.schedules).filter((k) => (cal.schedules[k]?.length ?? 0) > 0),
+        )
+      })()
+    : undefined
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
-      <Header />
+      <Header auctionStats={auctionStats} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <NewsBanner />
-        <StatsCard realEstate={MOCK_STATS.realEstate} personal={MOCK_STATS.personal} />
+        <StatsCard realEstate={auctionStats.realEstate} personal={auctionStats.personal} />
         <QuizBanner />
-        <DateSelector />
+        <DateSelector scheduleDateKeys={scheduleDateKeys} />
         <CategoryGrid />
       </ScrollView>
     </SafeAreaView>

@@ -1,8 +1,12 @@
 import { createAuctionRenderItem } from "@/components/auction/render-auction-item";
-import { FontSize, HIT_SLOP, Radius, Spacing } from "@/constants/tokens";
+import { FontFamily, FontSize, HIT_SLOP, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
-import { toAuctionItem } from "@/lib/api/auctions";
-import { useAuctions } from "@/lib/queries/auctions";
+import { unifiedAuctionToAuctionItem } from "@/lib/api/search";
+import {
+    usePopularSearchTerms,
+    useRecentSearchTerms,
+    useUnifiedSearchAuctions,
+} from "@/lib/queries/search";
 import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
@@ -11,6 +15,7 @@ import { useState } from "react";
 import {
     ActivityIndicator,
     Pressable,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -27,11 +32,21 @@ export default function SearchScreen() {
   const renderItem = createAuctionRenderItem({ favoriteIds, toggleFavorite });
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useAuctions({ keyword: searchQuery }, { enabled: searchQuery.length > 0 });
+    useUnifiedSearchAuctions(
+      { keyword: searchQuery },
+      { enabled: searchQuery.length > 0 },
+    );
+
+  const { data: popularTerms } = usePopularSearchTerms(7, 8, {
+    enabled: searchQuery.length === 0,
+  });
+  const { data: recentTerms } = useRecentSearchTerms(8, {
+    enabled: searchQuery.length === 0,
+  });
 
   const results =
     searchQuery.length > 0
-      ? (data?.pages ?? []).flatMap((p) => p.items.map(toAuctionItem))
+      ? (data?.pages ?? []).flatMap((p) => p.items.map(unifiedAuctionToAuctionItem))
       : [];
 
   const handleSubmit = () => {
@@ -114,16 +129,75 @@ export default function SearchScreen() {
       </View>
 
       {searchQuery.length === 0 ? (
-        <View
-          style={styles.hint}
-          accessible={true}
-          accessibilityLabel="검색 가이드"
+        <ScrollView
+          style={styles.suggestScroll}
+          contentContainerStyle={styles.suggestContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Ionicons name="search" size={48} color={theme.border.strong} />
-          <Text style={[styles.hintText, { color: theme.text.tertiary }]}>
-            물건명, 소재지, 사건번호로 검색하세요
-          </Text>
-        </View>
+          <View
+            style={styles.suggestHint}
+            accessible={true}
+            accessibilityLabel="검색 가이드"
+          >
+            <Ionicons name="search" size={48} color={theme.border.strong} />
+            <Text style={[styles.hintText, { color: theme.text.tertiary }]}>
+              KAMCO·기관 공매 통합 검색 — 물건명·주소·공고명으로 찾아보세요
+            </Text>
+          </View>
+          {recentTerms != null && recentTerms.length > 0 ? (
+            <View style={styles.chipSection}>
+              <Text style={[styles.chipSectionTitle, { color: theme.text.secondary }]}>
+                최근 검색
+              </Text>
+              <View style={styles.chipRow}>
+                {recentTerms.map((term) => (
+                  <Pressable
+                    key={`recent-${term}`}
+                    accessible={true}
+                    accessibilityLabel={`최근 검색어 ${term}`}
+                    accessibilityRole="button"
+                    style={[styles.chip, { backgroundColor: theme.bg.surface, borderColor: theme.border.subtle }]}
+                    onPress={() => {
+                      setInputQuery(term);
+                      setSearchQuery(term);
+                    }}
+                  >
+                    <Text style={[styles.chipText, { color: theme.text.primary }]} numberOfLines={1}>
+                      {term}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
+          {popularTerms != null && popularTerms.length > 0 ? (
+            <View style={styles.chipSection}>
+              <Text style={[styles.chipSectionTitle, { color: theme.text.secondary }]}>
+                인기 검색
+              </Text>
+              <View style={styles.chipRow}>
+                {popularTerms.map((row) => (
+                  <Pressable
+                    key={`popular-${row.keyword}`}
+                    accessible={true}
+                    accessibilityLabel={`인기 검색어 ${row.keyword}`}
+                    accessibilityRole="button"
+                    style={[styles.chip, { backgroundColor: theme.bg.surface, borderColor: theme.border.subtle }]}
+                    onPress={() => {
+                      setInputQuery(row.keyword);
+                      setSearchQuery(row.keyword);
+                    }}
+                  >
+                    <Text style={[styles.chipText, { color: theme.text.primary }]} numberOfLines={1}>
+                      {row.keyword}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </ScrollView>
       ) : isLoading ? (
         <View style={styles.hint}>
           <ActivityIndicator size="large" color={theme.brand.primary} />
@@ -196,6 +270,13 @@ const styles = StyleSheet.create({
     gap: Spacing.xl,
     paddingBottom: 60,
   },
+  suggestHint: {
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Spacing.xl,
+    paddingVertical: Spacing.xxl,
+    paddingHorizontal: Spacing.page,
+  },
   hintText: {
     fontSize: FontSize.base,
     textAlign: "center",
@@ -206,5 +287,36 @@ const styles = StyleSheet.create({
   },
   footerLoader: {
     paddingVertical: Spacing.xl,
+  },
+  suggestScroll: {
+    flex: 1,
+  },
+  suggestContent: {
+    paddingBottom: Spacing.section,
+  },
+  chipSection: {
+    paddingHorizontal: Spacing.page,
+    marginBottom: Spacing.xl,
+    gap: Spacing.md,
+  },
+  chipSectionTitle: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.semibold,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.md,
+  },
+  chip: {
+    maxWidth: "100%",
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  chipText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.medium,
   },
 });
