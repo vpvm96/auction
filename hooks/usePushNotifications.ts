@@ -2,11 +2,28 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { useEffect, useRef, useState } from "react";
-import { Platform } from "react-native";
+import { Alert, Linking, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+export type PushPermissionStatus = "granted" | "denied" | "undetermined" | "unavailable";
 
 interface PushNotificationState {
   expoPushToken: string | null;
   notification: Notifications.Notification | null;
+  permissionStatus: PushPermissionStatus;
+  /** 권한이 거부된 상태에서 호출하면 시스템 설정 앱으로 이동 */
+  openSystemSettings: () => Promise<void>;
+}
+
+const PERMISSION_ALERT_KEY = "push-permission-alert-shown";
+
+export async function openPushSettings(): Promise<void> {
+  // iOS는 앱 설정 페이지로 직접 이동, Android는 알림 채널 설정으로 이동
+  if (Platform.OS === "ios") {
+    await Linking.openURL("app-settings:");
+    return;
+  }
+  await Linking.openSettings();
 }
 
 /**
@@ -16,11 +33,14 @@ interface PushNotificationState {
  * 2. 푸시 알림 권한 요청
  * 3. EAS 프로젝트 ID를 참조하여 Expo Push Token 발급
  * 4. 알림 수신 리스너 + 탭 반응 리스너 등록/해제
+ * 5. 권한 거부 시 1회 안내 알럿 (사용자 본인이 다시 들어오면 안내하지 않음)
  */
 export function usePushNotifications(): PushNotificationState {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [notification, setNotification] =
     useState<Notifications.Notification | null>(null);
+  const [permissionStatus, setPermissionStatus] =
+    useState<PushPermissionStatus>("undetermined");
 
   const notificationListener = useRef<Notifications.EventSubscription | null>(
     null,
@@ -28,9 +48,31 @@ export function usePushNotifications(): PushNotificationState {
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
-    registerForPushNotificationsAsync().then((token) => {
-      if (token) {
-        setExpoPushToken(token);
+    registerForPushNotificationsAsync().then((result) => {
+      setPermissionStatus(result.status);
+      if (result.token) {
+        setExpoPushToken(result.token);
+      }
+
+      if (result.status === "denied") {
+        // 첫 거부 시에만 안내 — 매번 띄우면 사용자 경험을 해친다
+        AsyncStorage.getItem(PERMISSION_ALERT_KEY).then((shown) => {
+          if (shown != null) return;
+          AsyncStorage.setItem(PERMISSION_ALERT_KEY, "1");
+          Alert.alert(
+            "알림 권한이 꺼져 있어요",
+            "경매 마감, 입찰 결과 등 중요한 소식을 받으려면 설정에서 알림을 허용해주세요.",
+            [
+              { text: "다음에", style: "cancel" },
+              {
+                text: "설정 열기",
+                onPress: () => {
+                  openPushSettings().catch(() => undefined);
+                },
+              },
+            ],
+          );
+        });
       }
     });
 
@@ -57,7 +99,17 @@ export function usePushNotifications(): PushNotificationState {
     };
   }, []);
 
-  return { expoPushToken, notification };
+  return {
+    expoPushToken,
+    notification,
+    permissionStatus,
+    openSystemSettings: openPushSettings,
+  };
+}
+
+interface RegisterResult {
+  status: PushPermissionStatus;
+  token: string | null;
 }
 
 /**
@@ -68,7 +120,7 @@ export function usePushNotifications(): PushNotificationState {
  * - Android는 기본 알림 채널 설정 필요
  * - EAS 프로젝트 ID를 사용하여 Expo Push Token 발급
  */
-async function registerForPushNotificationsAsync(): Promise<string | null> {
+async function registerForPushNotificationsAsync(): Promise<RegisterResult> {
   // Android 알림 채널 설정 (Android 8.0+ 필수)
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
@@ -82,7 +134,7 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
   // 물리적 기기 확인 — 시뮬레이터/에뮬레이터에서는 푸시 토큰 발급 불가
   if (!Device.isDevice) {
     console.log("[Push] 물리적 기기에서만 푸시 알림을 사용할 수 있습니다.");
-    return null;
+    return { status: "unavailable", token: null };
   }
 
   // 기존 권한 상태 확인
@@ -97,7 +149,7 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
   if (finalStatus !== "granted") {
     console.log("[Push] 푸시 알림 권한이 거부되었습니다.");
-    return null;
+    return { status: "denied", token: null };
   }
 
   // EAS 프로젝트 ID 참조하여 Expo Push Token 발급
@@ -107,13 +159,17 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
   if (!projectId) {
     console.log("[Push] EAS 프로젝트 ID를 찾을 수 없습니다.");
-    return null;
+    return { status: "granted", token: null };
   }
 
-  const pushTokenData = await Notifications.getExpoPushTokenAsync({
-    projectId,
-  });
-
-  console.log("[Push] Expo Push Token:", pushTokenData.data);
-  return pushTokenData.data;
+  try {
+    const pushTokenData = await Notifications.getExpoPushTokenAsync({
+      projectId,
+    });
+    console.log("[Push] Expo Push Token:", pushTokenData.data);
+    return { status: "granted", token: pushTokenData.data };
+  } catch (err) {
+    console.log("[Push] Expo Push Token 발급 실패:", err);
+    return { status: "granted", token: null };
+  }
 }

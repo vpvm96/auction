@@ -1,15 +1,14 @@
 import { AuthProvider } from "@/components/providers/auth-provider";
-import { Colors } from "@/constants/colors";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import "@/global.css";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useIsDark, useTheme } from "@/hooks/useTheme";
 import { DevicePlatform, registerDevice } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
+import { getDeviceInstallationId } from "@/lib/device-id";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { useNotificationStore } from "@/lib/store/useNotificationStore";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import * as Application from "expo-application";
 import { useFonts } from "expo-font";
 import { Image } from "expo-image";
 import * as Notifications from "expo-notifications";
@@ -84,12 +83,22 @@ export function ErrorBoundary({
   error: Error;
   retry: () => void;
 }) {
+  const theme = useTheme();
   return (
-    <View style={styles.errorContainer}>
-      <Text style={styles.errorTitle}>오류가 발생했습니다</Text>
-      <Text style={styles.errorMessage}>{error.message}</Text>
-      <Pressable style={styles.retryButton} onPress={retry}>
-        <Text style={styles.retryText}>다시 시도</Text>
+    <View style={[styles.errorContainer, { backgroundColor: theme.bg.base }]}>
+      <Text style={[styles.errorTitle, { color: theme.text.primary }]}>
+        오류가 발생했습니다
+      </Text>
+      <Text style={[styles.errorMessage, { color: theme.text.secondary }]}>
+        {error.message}
+      </Text>
+      <Pressable
+        style={[styles.retryButton, { backgroundColor: theme.brand.primary }]}
+        onPress={retry}
+      >
+        <Text style={[styles.retryText, { color: theme.brand.onPrimary }]}>
+          다시 시도
+        </Text>
       </Pressable>
     </View>
   );
@@ -136,12 +145,10 @@ export default function RootLayout() {
 
     const register = async () => {
       try {
-        const installationId =
-          Platform.OS === "ios"
-            ? ((await Application.getIosIdForVendorAsync()) ??
-              Application.applicationId ??
-              "unknown-ios-device")
-            : Application.getAndroidId();
+        // 첫 실행 시 UUID v4 발급 후 AsyncStorage에 영구 저장.
+        // — Application.getIosIdForVendorAsync()는 같은 vendor 앱 삭제 시 변경되고
+        //   getAndroidId()도 일부 환경에서 비결정적이어서, 자체 ID로 안정성 확보.
+        const installationId = await getDeviceInstallationId();
         const platform =
           Platform.OS === "ios" ? DevicePlatform.iOS : DevicePlatform.Android;
 
@@ -276,22 +283,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: Spacing.section,
-    backgroundColor: Colors.background,
     gap: Spacing.xl,
   },
   errorTitle: {
     fontSize: FontSize.xxl,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
   },
   errorMessage: {
     fontSize: FontSize.base,
-    color: Colors.textSecondary,
     textAlign: "center",
     lineHeight: 22,
   },
   retryButton: {
-    backgroundColor: Colors.primary,
     borderRadius: Radius.xl,
     paddingHorizontal: Spacing.xxxl,
     paddingVertical: Spacing.xl,
@@ -300,6 +303,5 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: FontSize.base,
     fontFamily: FontFamily.bold,
-    color: Colors.white,
   },
 });

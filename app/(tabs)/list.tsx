@@ -9,10 +9,11 @@ import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
 import { useIsFocused } from "@react-navigation/native";
 import { FlashList } from "@shopify/flash-list";
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Pressable,
+    RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
@@ -90,8 +91,19 @@ export default function ListScreen() {
 
   const activeTab = FILTER_TABS.find((t) => t.type === selectedType);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, refetch } =
     useAuctions({ category: activeTab?.category });
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
 
   const allItems = (data?.pages ?? []).flatMap((p) =>
     p.items.map(toAuctionItem),
@@ -242,6 +254,14 @@ export default function ListScreen() {
           showsVerticalScrollIndicator={false}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.3}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.brand.primary}
+              colors={[theme.brand.primary]}
+            />
+          }
           ListFooterComponent={
             isFetchingNextPage ? (
               <ActivityIndicator

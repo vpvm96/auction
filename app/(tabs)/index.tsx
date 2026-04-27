@@ -1,8 +1,10 @@
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
+import { ActivityIndicator, RefreshControl, StyleSheet, Text, View, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
+import { FlashList } from '@shopify/flash-list'
+import { useState, useCallback } from 'react'
 import { useTheme, useIsDark } from '@/hooks/useTheme'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { StatsCard } from '@/components/home/stats-card'
@@ -10,6 +12,7 @@ import { CategoryGrid } from '@/components/home/category-grid'
 import { DateSelector } from '@/components/home/date-selector'
 import { NewsBanner } from '@/components/home/news-banner'
 import { QuizBanner } from '@/components/home/quiz-banner'
+import { StatsCardSkeleton } from '@/components/ui/skeleton'
 import { dashboardSummaryToAuctionStats } from '@/lib/api/dashboard'
 import type { AuctionStats } from '@/lib/mock-data'
 import { MOCK_STATS, MOCK_NOTIFICATIONS } from '@/lib/mock-data'
@@ -30,6 +33,15 @@ function getTodayLabel(): string {
 
 const LOGO_BG_LIGHT = '#F0F0F5'
 const LOGO_BG_DARK = '#2A2A3A'
+
+type Section =
+  | { kind: 'news' }
+  | { kind: 'stats-loading' }
+  | { kind: 'stats-error' }
+  | { kind: 'stats'; stats: AuctionStats }
+  | { kind: 'quiz' }
+  | { kind: 'date'; scheduleDateKeys: Set<string> | undefined }
+  | { kind: 'categories' }
 
 function Header({ auctionStats }: { auctionStats: AuctionStats }) {
   const theme = useTheme()
@@ -78,16 +90,27 @@ function Header({ auctionStats }: { auctionStats: AuctionStats }) {
         </View>
       </View>
 
-      {/* 검색 버튼 */}
-      <Pressable style={styles.iconButton} onPress={handleSearchPress}>
+      <Pressable
+        accessible={true}
+        accessibilityLabel="검색"
+        accessibilityRole="button"
+        hitSlop={8}
+        style={styles.iconButton}
+        onPress={handleSearchPress}
+      >
         <Ionicons name="search-outline" size={22} color={theme.text.secondary} />
       </Pressable>
 
-      {/* 테마 토글 */}
       <ThemeToggleButton />
 
-      {/* 알림 버튼 */}
-      <Pressable style={styles.bellButton} onPress={handleNotificationPress}>
+      <Pressable
+        accessible={true}
+        accessibilityLabel={`알림${unreadCount > 0 ? `, 읽지 않은 알림 ${unreadCount}건` : ''}`}
+        accessibilityRole="button"
+        hitSlop={8}
+        style={styles.bellButton}
+        onPress={handleNotificationPress}
+      >
         <Ionicons name="notifications-outline" size={22} color={theme.text.secondary} />
         {unreadCount > 0 ? (
           <View style={[styles.badge, { backgroundColor: theme.auction.hot }]}>
@@ -99,6 +122,61 @@ function Header({ auctionStats }: { auctionStats: AuctionStats }) {
   )
 }
 
+function StatsErrorView({ onRetry }: { onRetry: () => void }) {
+  const theme = useTheme()
+  return (
+    <View
+      style={[
+        styles.statsError,
+        { backgroundColor: theme.bg.surface, borderColor: theme.border.subtle },
+      ]}
+    >
+      <Ionicons name="alert-circle-outline" size={28} color={theme.status.danger} />
+      <Text style={[styles.statsErrorTitle, { color: theme.text.primary }]}>
+        통계를 불러오지 못했습니다
+      </Text>
+      <Text style={[styles.statsErrorMessage, { color: theme.text.secondary }]}>
+        잠시 후 다시 시도해주세요.
+      </Text>
+      <Pressable
+        accessible={true}
+        accessibilityLabel="다시 시도"
+        accessibilityRole="button"
+        style={[styles.retryButton, { backgroundColor: theme.brand.primary }]}
+        onPress={onRetry}
+      >
+        <Text style={[styles.retryButtonText, { color: theme.brand.onPrimary }]}>
+          다시 시도
+        </Text>
+      </Pressable>
+    </View>
+  )
+}
+
+function getSectionType(item: Section) {
+  return item.kind
+}
+
+const renderSection = ({ item }: { item: Section }) => {
+  switch (item.kind) {
+    case 'news':
+      return <NewsBanner />
+    case 'stats-loading':
+      return <StatsCardSkeleton />
+    case 'stats-error':
+      // onRetry는 extraData로 갱신되도록 부모에서 주입
+      return null
+    case 'stats':
+      return <StatsCard realEstate={item.stats.realEstate} personal={item.stats.personal} />
+    case 'quiz':
+      return <QuizBanner />
+    case 'date':
+      return <DateSelector scheduleDateKeys={item.scheduleDateKeys} />
+    case 'categories':
+      return <CategoryGrid />
+  }
+}
+
 export default function HomeScreen() {
   const theme = useTheme()
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
@@ -108,10 +186,41 @@ export default function HomeScreen() {
   const dashboardQuery = useDashboardSummary()
   const calendarQuery = useCalendarSchedules(calendarParams)
 
-  const auctionStats: AuctionStats =
-    isLoggedIn && dashboardQuery.data != null
-      ? dashboardSummaryToAuctionStats(dashboardQuery.data)
-      : MOCK_STATS
+  const [refreshing, setRefreshing] = useState(false)
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await Promise.all([dashboardQuery.refetch(), calendarQuery.refetch()])
+    } finally {
+      setRefreshing(false)
+    }
+  }, [dashboardQuery, calendarQuery])
+
+  const handleStatsRetry = useCallback(() => {
+    dashboardQuery.refetch()
+  }, [dashboardQuery])
+
+  // Stats 섹션 상태 결정
+  // - 비로그인: 항상 MOCK 데이터 표시
+  // - 로그인 + 첫 로드: 스켈레톤
+  // - 로그인 + 에러 (캐시 데이터 없음): 에러 UI
+  // - 그 외: 데이터 또는 직전 캐시
+  let statsSection: Section
+  if (!isLoggedIn) {
+    statsSection = { kind: 'stats', stats: MOCK_STATS }
+  } else if (dashboardQuery.isLoading) {
+    statsSection = { kind: 'stats-loading' }
+  } else if (dashboardQuery.isError && dashboardQuery.data == null) {
+    statsSection = { kind: 'stats-error' }
+  } else if (dashboardQuery.data != null) {
+    statsSection = {
+      kind: 'stats',
+      stats: dashboardSummaryToAuctionStats(dashboardQuery.data),
+    }
+  } else {
+    statsSection = { kind: 'stats', stats: MOCK_STATS }
+  }
 
   const scheduleDateKeys = isLoggedIn
     ? (() => {
@@ -123,20 +232,53 @@ export default function HomeScreen() {
       })()
     : undefined
 
+  const headerStats: AuctionStats =
+    statsSection.kind === 'stats' ? statsSection.stats : MOCK_STATS
+
+  const sections: Section[] = [
+    { kind: 'news' },
+    statsSection,
+    { kind: 'quiz' },
+    { kind: 'date', scheduleDateKeys },
+    { kind: 'categories' },
+  ]
+
+  // stats-error 섹션은 onRetry 콜백이 필요해서 별도 렌더러로 처리
+  const renderItem = ({ item }: { item: Section }) => {
+    if (item.kind === 'stats-error') {
+      return <StatsErrorView onRetry={handleStatsRetry} />
+    }
+    return renderSection({ item })
+  }
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
-      <Header auctionStats={auctionStats} />
-      <ScrollView
-        style={styles.scroll}
+      <Header auctionStats={headerStats} />
+      <FlashList
+        data={sections}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.kind}
+        getItemType={getSectionType}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-      >
-        <NewsBanner />
-        <StatsCard realEstate={auctionStats.realEstate} personal={auctionStats.personal} />
-        <QuizBanner />
-        <DateSelector scheduleDateKeys={scheduleDateKeys} />
-        <CategoryGrid />
-      </ScrollView>
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.brand.primary}
+            colors={[theme.brand.primary]}
+          />
+        }
+        ListFooterComponent={
+          dashboardQuery.isFetching && !refreshing && !dashboardQuery.isLoading ? (
+            <ActivityIndicator
+              style={styles.footerLoader}
+              color={theme.brand.primary}
+              size="small"
+            />
+          ) : null
+        }
+      />
     </SafeAreaView>
   )
 }
@@ -205,11 +347,40 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
   },
-  scroll: {
-    flex: 1,
-  },
   content: {
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.section,
+  },
+  footerLoader: {
+    paddingVertical: Spacing.xl,
+  },
+  statsError: {
+    marginHorizontal: Spacing.page,
+    marginBottom: Spacing.xl,
+    borderRadius: Radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: Spacing.section,
+    paddingHorizontal: Spacing.xxl,
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  statsErrorTitle: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.bold,
+    marginTop: Spacing.sm,
+  },
+  statsErrorMessage: {
+    fontSize: FontSize.sm,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.xxl,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.lg,
+  },
+  retryButtonText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.bold,
   },
 })

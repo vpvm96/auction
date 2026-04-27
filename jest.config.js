@@ -39,6 +39,7 @@ module.exports = {
     "/coverage/",
     "/__tests__/",
   ],
+  coverageReporters: ["json", "lcov", "clover", "text", "text-summary", "json-summary"],
   coverageThreshold: {
     global: {
       lines: 60,

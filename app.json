@@ -97,7 +97,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/notification-icon.png",
-          "color": "#ffffff",
+          "color": "#023c69",
           "sounds": []
         }
       ]

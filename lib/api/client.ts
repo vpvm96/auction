@@ -47,6 +47,11 @@ export function resetForceLogoutFlag() {
 let _refreshPromise: Promise<string> | null = null
 
 async function tryRefreshToken(): Promise<string> {
+  // 이미 강제 로그아웃이 진행 중이면 더 이상 refresh 시도하지 않음.
+  // — 백엔드 장애로 retry가 계속 401을 받는 폭주 시나리오를 차단한다.
+  if (_isLoggingOut) {
+    throw new ApiError(401, 'Already logging out')
+  }
   if (_refreshPromise) return _refreshPromise
 
   _refreshPromise = (async () => {
@@ -114,6 +119,17 @@ export async function apiClient<T>(
         headers,
       })
 
+      // retry가 또 401이면 강제 로그아웃 — 무한 refresh 루프를 막는다.
+      // (백엔드가 새 access token을 발급했는데도 같은 요청을 거부하는 경우)
+      if (retryResponse.status === 401) {
+        if (!_isLoggingOut) {
+          _isLoggingOut = true
+          await removeAccessToken()
+          _onForceLogout?.()
+        }
+        throw new ApiError(401, 'Authentication failed after refresh')
+      }
+
       if (!retryResponse.ok) {
         const body = await retryResponse.text().catch(() => retryResponse.statusText)
         throw new ApiError(retryResponse.status, body)
@@ -121,7 +137,8 @@ export async function apiClient<T>(
 
       if (retryResponse.status === 204) return undefined as T
       return retryResponse.json() as Promise<T>
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError) throw err
       throw new ApiError(401, 'Authentication failed')
     }
   }
