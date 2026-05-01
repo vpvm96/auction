@@ -84,6 +84,36 @@ async function tryRefreshToken(): Promise<string> {
   return _refreshPromise
 }
 
+// ─── 로깅 유틸 ──────────────────────────────────────────────────────────────
+
+// password / token 류는 콘솔에 그대로 노출되지 않도록 마스킹.
+const SENSITIVE_KEYS = new Set([
+  'password',
+  'token',
+  'accessToken',
+  'refreshToken',
+  'pushToken',
+])
+
+function maskBody(raw: BodyInit | null | undefined): unknown {
+  if (raw == null) return undefined
+  if (typeof raw !== 'string') return '[non-string body]'
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    const masked: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(parsed)) {
+      if (SENSITIVE_KEYS.has(k) && typeof v === 'string' && v.length > 0) {
+        masked[k] = `[${v.length} chars]`
+      } else {
+        masked[k] = v
+      }
+    }
+    return masked
+  } catch {
+    return raw.length > 200 ? `${raw.slice(0, 200)}…` : raw
+  }
+}
+
 // ─── API Client ──────────────────────────────────────────────────────────────
 
 export async function apiClient<T>(
@@ -104,12 +134,20 @@ export async function apiClient<T>(
     }
   }
 
+  const method = fetchOptions.method ?? 'GET'
+  const startedAt = Date.now()
+  console.log('[API] →', method, path, {
+    body: maskBody(fetchOptions.body),
+    auth: headers['Authorization'] != null,
+  })
+
   const response = await fetch(`${BASE_URL}${path}`, {
     ...fetchOptions,
     headers,
   })
 
   if (response.status === 401 && !skipAuth) {
+    console.log('[API] ↺', method, path, '401 → refresh 시도')
     try {
       const newToken = await tryRefreshToken()
       headers['Authorization'] = `Bearer ${newToken}`
@@ -122,6 +160,7 @@ export async function apiClient<T>(
       // retry가 또 401이면 강제 로그아웃 — 무한 refresh 루프를 막는다.
       // (백엔드가 새 access token을 발급했는데도 같은 요청을 거부하는 경우)
       if (retryResponse.status === 401) {
+        console.log('[API] ✗', method, path, 'refresh 후에도 401 → 강제 로그아웃')
         if (!_isLoggingOut) {
           _isLoggingOut = true
           await removeAccessToken()
@@ -132,9 +171,13 @@ export async function apiClient<T>(
 
       if (!retryResponse.ok) {
         const body = await retryResponse.text().catch(() => retryResponse.statusText)
+        console.log('[API] ✗', method, path, retryResponse.status, `${Date.now() - startedAt}ms`, {
+          body: body.slice(0, 500),
+        })
         throw new ApiError(retryResponse.status, body)
       }
 
+      console.log('[API] ✓', method, path, retryResponse.status, `${Date.now() - startedAt}ms (after refresh)`)
       if (retryResponse.status === 204) return undefined as T
       return retryResponse.json() as Promise<T>
     } catch (err) {
@@ -145,9 +188,13 @@ export async function apiClient<T>(
 
   if (!response.ok) {
     const body = await response.text().catch(() => response.statusText)
+    console.log('[API] ✗', method, path, response.status, `${Date.now() - startedAt}ms`, {
+      body: body.slice(0, 500),
+    })
     throw new ApiError(response.status, body)
   }
 
+  console.log('[API] ✓', method, path, response.status, `${Date.now() - startedAt}ms`)
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
 }

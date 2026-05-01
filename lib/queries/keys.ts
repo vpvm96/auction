@@ -2,6 +2,7 @@ import type { AuctionListParams } from '@/lib/api/auctions'
 import type { CalendarScheduleParams } from '@/lib/api/calendar'
 import type { CodeListParams } from '@/lib/api/codes'
 import type { InstitutionAuctionListParams } from '@/lib/api/institution-auction'
+import type { NotificationListParams } from '@/lib/api/notifications'
 import type { SearchAuctionsParams } from '@/lib/api/search'
 
 export const queryKeys = {
@@ -34,5 +35,12 @@ export const queryKeys = {
     list: (params: InstitutionAuctionListParams) =>
       ['institution-auction', 'list', params] as const,
     detail: (id: number | string) => ['institution-auction', 'detail', id] as const,
+  },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (params: Omit<NotificationListParams, 'page'>) =>
+      ['notifications', 'list', params] as const,
+    unreadCount: () => ['notifications', 'unread-count'] as const,
+    settings: () => ['notifications', 'settings'] as const,
   },
 } as const

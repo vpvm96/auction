@@ -33,8 +33,12 @@ export async function signInWithNaver(): Promise<OAuthSignInResult> {
 
   let naver: NaverModule | null = null
   try {
+    // v4.x 부터 NaverLogin 객체가 default export 라서 .default 로 풀어야 한다.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    naver = require('@react-native-seoul/naver-login') as NaverModule
+    const mod = require('@react-native-seoul/naver-login') as
+      | NaverModule
+      | { default: NaverModule }
+    naver = ('default' in mod ? mod.default : mod) as NaverModule
   } catch {
     throw new OAuthSignInError(
       'MISSING_PACKAGE',

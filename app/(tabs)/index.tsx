@@ -15,10 +15,10 @@ import { QuizBanner } from '@/components/home/quiz-banner'
 import { StatsCardSkeleton } from '@/components/ui/skeleton'
 import { dashboardSummaryToAuctionStats } from '@/lib/api/dashboard'
 import type { AuctionStats } from '@/lib/mock-data'
-import { MOCK_STATS, MOCK_NOTIFICATIONS } from '@/lib/mock-data'
+import { MOCK_STATS } from '@/lib/mock-data'
 import { useCalendarSchedules } from '@/lib/queries/calendar'
 import { useDashboardSummary } from '@/lib/queries/dashboard'
-import { useNotificationStore } from '@/lib/store/useNotificationStore'
+import { useUnreadNotificationCount } from '@/lib/queries/notifications'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { ThemeToggleButton } from '@/components/ui/theme-toggle-button'
 
@@ -46,8 +46,8 @@ type Section =
 function Header({ auctionStats }: { auctionStats: AuctionStats }) {
   const theme = useTheme()
   const isDark = useIsDark()
-  const readIds = useNotificationStore((s) => s.readIds)
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !readIds.has(n.id)).length
+  const { data: unreadCountData } = useUnreadNotificationCount()
+  const unreadCount = Number(unreadCountData ?? 0)
   const totalAuctions = auctionStats.realEstate.count + auctionStats.personal.count
 
   const handleSearchPress = () => {

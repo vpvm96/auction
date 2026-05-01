@@ -1,29 +1,53 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native'
+import { ActivityIndicator, RefreshControl, StyleSheet, Text, View, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useState } from 'react'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
-import { MOCK_NOTIFICATIONS, type NotificationItem } from '@/lib/mock-data'
-import { useNotificationStore } from '@/lib/store/useNotificationStore'
+import {
+  markAllNotificationsRead,
+  markNotificationRead,
+  type NotificationResponse,
+} from '@/lib/api/notifications'
+import { useNotifications } from '@/lib/queries/notifications'
+import { queryKeys } from '@/lib/queries/keys'
 import { useTheme } from '@/hooks/useTheme'
 
-const ALL_IDS = MOCK_NOTIFICATIONS.map((n) => n.id)
+type RowKind = 'auction' | 'system'
+
+function classifyType(type: string): RowKind {
+  return type.toLowerCase().includes('system') ? 'system' : 'auction'
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 interface NotificationRowProps {
-  id: string
+  id: number
   title: string
   body: string
   date: string
-  type: 'auction' | 'system'
+  kind: RowKind
   isRead: boolean
-  onMarkRead: (id: string) => void
+  onMarkRead: (id: number) => void
 }
 
-function NotificationRow({ id, title, body, date, type, isRead, onMarkRead }: NotificationRowProps) {
+function NotificationRow({ id, title, body, date, kind, isRead, onMarkRead }: NotificationRowProps) {
   const theme = useTheme()
-  const iconName = type === 'auction' ? 'home-outline' : 'information-circle-outline'
-  const isSystem = type === 'system'
+  const iconName = kind === 'auction' ? 'home-outline' : 'information-circle-outline'
+  const isSystem = kind === 'system'
+
+  const handlePress = () => {
+    if (!isRead) onMarkRead(id)
+  }
 
   return (
     <Pressable
@@ -32,7 +56,7 @@ function NotificationRow({ id, title, body, date, type, isRead, onMarkRead }: No
         { backgroundColor: theme.bg.surface },
         isRead ? styles.notifItemRead : null,
       ]}
-      onPress={() => onMarkRead(id)}
+      onPress={handlePress}
     >
       <View style={[
         styles.notifIcon,
@@ -76,23 +100,103 @@ function NotifSeparator() {
 
 export default function NotificationsScreen() {
   const theme = useTheme()
-  const readIds = useNotificationStore((s) => s.readIds)
-  const markRead = useNotificationStore((s) => s.markRead)
-  const markAllRead = useNotificationStore((s) => s.markAllRead)
+  const queryClient = useQueryClient()
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !readIds.has(n.id)).length
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useNotifications()
 
-  const renderNotifItem = ({ item }: { item: NotificationItem }) => (
+  const items = data?.pages.flatMap((p) => p.items) ?? []
+  const unreadCount = items.filter((n) => !n.isRead).length
+
+  const invalidateNotifications = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all })
+  }
+
+  const markReadMutation = useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: invalidateNotifications,
+  })
+
+  const markAllReadMutation = useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: invalidateNotifications,
+  })
+
+  const handleMarkRead = useCallback(
+    (id: number) => markReadMutation.mutate(id),
+    [markReadMutation],
+  )
+
+  const handleMarkAllRead = () => markAllReadMutation.mutate()
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refetch()
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  const handleEndReached = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }
+
+  const renderNotifItem = ({ item }: { item: NotificationResponse }) => (
     <NotificationRow
       id={item.id}
       title={item.title}
       body={item.body}
-      date={item.date}
-      type={item.type}
-      isRead={readIds.has(item.id)}
-      onMarkRead={markRead}
+      date={formatDate(item.createdAt)}
+      kind={classifyType(item.type)}
+      isRead={item.isRead}
+      onMarkRead={handleMarkRead}
     />
   )
+
+  const renderFooter = () => {
+    if (!isFetchingNextPage) return null
+    return (
+      <View style={styles.footerLoading}>
+        <ActivityIndicator size="small" color={theme.brand.primary} />
+      </View>
+    )
+  }
+
+  const renderEmptyState = () => {
+    if (isLoading) {
+      return <ActivityIndicator size="large" color={theme.brand.primary} />
+    }
+    if (isError) {
+      return (
+        <>
+          <Ionicons name="alert-circle-outline" size={48} color={theme.text.tertiary} />
+          <Text style={[styles.emptyText, { color: theme.text.tertiary }]}>
+            알림을 불러오지 못했습니다.
+          </Text>
+          <Pressable onPress={() => refetch()} hitSlop={8}>
+            <Text style={[styles.retryText, { color: theme.brand.primary }]}>다시 시도</Text>
+          </Pressable>
+        </>
+      )
+    }
+    return (
+      <>
+        <Ionicons name="notifications-off-outline" size={48} color={theme.text.tertiary} />
+        <Text style={[styles.emptyText, { color: theme.text.tertiary }]}>알림이 없습니다.</Text>
+      </>
+    )
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
@@ -102,7 +206,11 @@ export default function NotificationsScreen() {
         </Pressable>
         <Text style={[styles.navTitle, { color: theme.text.primary }]}>알림</Text>
         {unreadCount > 0 ? (
-          <Pressable onPress={() => markAllRead(ALL_IDS)} hitSlop={8}>
+          <Pressable
+            onPress={handleMarkAllRead}
+            hitSlop={8}
+            disabled={markAllReadMutation.isPending}
+          >
             <Text style={[styles.markAllText, { color: theme.brand.primary }]}>전체 읽음</Text>
           </Pressable>
         ) : (
@@ -110,21 +218,28 @@ export default function NotificationsScreen() {
         )}
       </View>
 
-      <FlashList
-        data={MOCK_NOTIFICATIONS}
-        renderItem={renderNotifItem}
-        keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={NotifSeparator}
-        showsVerticalScrollIndicator={false}
-        extraData={readIds}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="notifications-off-outline" size={48} color={theme.text.tertiary} />
-            <Text style={[styles.emptyText, { color: theme.text.tertiary }]}>알림이 없습니다.</Text>
-          </View>
-        }
-        contentContainerStyle={styles.listContent}
-      />
+      {items.length === 0 ? (
+        <View style={styles.emptyContainer}>{renderEmptyState()}</View>
+      ) : (
+        <FlashList
+          data={items}
+          renderItem={renderNotifItem}
+          keyExtractor={(item) => String(item.id)}
+          ItemSeparatorComponent={NotifSeparator}
+          showsVerticalScrollIndicator={false}
+          ListFooterComponent={renderFooter}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.brand.primary}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -205,12 +320,22 @@ const styles = StyleSheet.create({
   separator: {
     height: StyleSheet.hairlineWidth,
   },
-  empty: {
-    padding: Spacing.section,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: Spacing.section,
     gap: Spacing.xl,
   },
   emptyText: {
     fontSize: FontSize.base,
+  },
+  retryText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.semibold,
+  },
+  footerLoading: {
+    paddingVertical: Spacing.xl,
+    alignItems: 'center',
   },
 })

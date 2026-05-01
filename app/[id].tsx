@@ -428,6 +428,15 @@ export default function DetailScreen() {
     }
   }, [id, addRecentlyViewed]);
 
+  useEffect(() => {
+    if (rawItem == null) return;
+    console.log("[Detail] images", {
+      id: rawItem.id,
+      count: rawItem.cltrImgFiles?.length ?? 0,
+      cltrImgFiles: rawItem.cltrImgFiles,
+    });
+  }, [rawItem]);
+
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]}>
