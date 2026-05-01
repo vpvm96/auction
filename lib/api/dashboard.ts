@@ -43,5 +43,5 @@ export function dashboardSummaryToAuctionStats(
 
 /** GET /dashboard/summary — 카테고리별 전체 건수 및 일일 변동 */
 export function fetchDashboardSummary(): Promise<DashboardSummaryResponse> {
-  return apiClient<DashboardSummaryResponse>('/dashboard/summary')
+  return apiClient<DashboardSummaryResponse>('/hammers/hammer-auctions/dashboard/summary')
 }

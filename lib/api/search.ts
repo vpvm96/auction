@@ -110,7 +110,9 @@ export function searchAuctions(
   params: SearchAuctionsParams = {},
 ): Promise<PagedResponse<UnifiedAuctionItem>> {
   const qs = buildQueryString(params)
-  return apiClient<PagedResponse<UnifiedAuctionItem>>(`/search/auctions${qs}`)
+  return apiClient<PagedResponse<UnifiedAuctionItem>>(
+    `/hammers/hammer-auctions/search/auctions${qs}`,
+  )
 }
 
 /** GET /search/popular — 글로벌 인기 검색어 */
@@ -118,7 +120,7 @@ export function fetchPopularSearchTerms(
   params: PopularSearchParams = {},
 ): Promise<PopularSearchTerm[]> {
   const qs = buildQueryString(params)
-  return apiClient<PopularSearchTerm[]>(`/search/popular${qs}`)
+  return apiClient<PopularSearchTerm[]>(`/hammers/hammer-auctions/search/popular${qs}`)
 }
 
 /** GET /search/recent — 내 최근 검색어 */
@@ -126,7 +128,7 @@ export function fetchRecentSearchTerms(
   params: RecentSearchParams = {},
 ): Promise<string[]> {
   const qs = buildQueryString(params)
-  return apiClient<string[]>(`/search/recent${qs}`)
+  return apiClient<string[]>(`/hammers/hammer-auctions/search/recent${qs}`)
 }
 
 /** DELETE /search/recent — 내 검색 기록 전체 삭제 (204) */
@@ -134,5 +136,5 @@ export function clearRecentSearchTerms(
   params: ClearRecentSearchParams = {},
 ): Promise<void> {
   const qs = buildQueryString(params)
-  return apiClient<void>(`/search/recent${qs}`, { method: 'DELETE' })
+  return apiClient<void>(`/hammers/hammer-auctions/search/recent${qs}`, { method: 'DELETE' })
 }

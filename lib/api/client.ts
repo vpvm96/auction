@@ -179,7 +179,7 @@ export async function apiClient<T>(
 
       console.log('[API] ✓', method, path, retryResponse.status, `${Date.now() - startedAt}ms (after refresh)`)
       if (retryResponse.status === 204) return undefined as T
-      return retryResponse.json() as Promise<T>
+      return parseJsonOrThrow<T>(retryResponse, method, path)
     } catch (err) {
       if (err instanceof ApiError) throw err
       throw new ApiError(401, 'Authentication failed')
@@ -196,6 +196,20 @@ export async function apiClient<T>(
 
   console.log('[API] ✓', method, path, response.status, `${Date.now() - startedAt}ms`)
   if (response.status === 204) return undefined as T
+  return parseJsonOrThrow<T>(response, method, path)
+}
+
+// gateway가 잘못된 path를 SPA index.html로 fallback할 때 JSON parse가 실패하기 전에 명확한 에러를 던진다.
+async function parseJsonOrThrow<T>(
+  response: Response,
+  method: string,
+  path: string,
+): Promise<T> {
+  const contentType = response.headers.get('content-type') ?? ''
+  if (!contentType.includes('application/json')) {
+    console.log('[API] ⚠ JSON 아님', method, path, { contentType, finalUrl: response.url })
+    throw new ApiError(response.status, `Expected JSON, got ${contentType || 'no content-type'}`)
+  }
   return response.json() as Promise<T>
 }
 

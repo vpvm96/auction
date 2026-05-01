@@ -2,7 +2,7 @@
   "expo": {
     "name": "HB Auction",
     "slug": "property-auction",
-    "version": "1.0.3",
+    "version": "1.0.5",
     "orientation": "portrait",
     "scheme": "propertyauction",
     "icon": "./assets/images/icon.png",
@@ -22,14 +22,10 @@
             ]
           },
           {
-            "CFBundleURLSchemes": [
-              "kakao72400ba60e1a208bb3ff065e46ee276a"
-            ]
+            "CFBundleURLSchemes": ["kakao72400ba60e1a208bb3ff065e46ee276a"]
           },
           {
-            "CFBundleURLSchemes": [
-              "hbauction"
-            ]
+            "CFBundleURLSchemes": ["hbauction"]
           }
         ],
         "LSApplicationQueriesSchemes": [

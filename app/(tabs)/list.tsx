@@ -108,6 +108,7 @@ export default function ListScreen() {
   const allItems = (data?.pages ?? []).flatMap((p) =>
     p.items.map(toAuctionItem),
   );
+  const totalCount = data?.pages?.[0]?.totalCount ?? 0;
 
   let sorted = allItems;
   if (selectedSort === "deadline") {
@@ -197,7 +198,7 @@ export default function ListScreen() {
 
       <View style={[styles.sortRow, { backgroundColor: theme.bg.base }]}>
         <Text style={[styles.resultCount, { color: theme.text.primary }]}>
-          {isLoading ? "-" : `${sorted.length}건`}
+          {isLoading ? "-" : `${totalCount.toLocaleString()}건`}
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.sortOptions}>

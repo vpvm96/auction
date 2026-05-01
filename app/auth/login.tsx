@@ -1,6 +1,7 @@
 import { SocialLoginButton } from "@/components/auth/social-login-button";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
+import { SAVED_EMAIL_KEY } from "@/lib/auth/storage-keys";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -20,8 +21,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const LOGO = require("@/assets/images/logo/hb_acution_cutout.png");
-
-const SAVED_EMAIL_KEY = "auth.savedEmail";
 
 export default function LoginScreen() {
   const theme = useTheme();

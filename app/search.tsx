@@ -1,8 +1,11 @@
 import { createAuctionRenderItem } from "@/components/auction/render-auction-item";
+import { SectionHeader } from "@/components/ui/section-header";
+import { AuctionListSkeleton } from "@/components/ui/skeleton";
 import { FontFamily, FontSize, HIT_SLOP, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
 import { unifiedAuctionToAuctionItem } from "@/lib/api/search";
 import {
+    useClearRecentSearchTerms,
     usePopularSearchTerms,
     useRecentSearchTerms,
     useUnifiedSearchAuctions,
@@ -14,6 +17,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -37,17 +41,24 @@ export default function SearchScreen() {
       { enabled: searchQuery.length > 0 },
     );
 
-  const { data: popularTerms } = usePopularSearchTerms(7, 8, {
-    enabled: searchQuery.length === 0,
-  });
+  // popular은 빈 검색결과 fallback용으로도 쓰기 때문에 항상 fetch.
+  const { data: popularTerms } = usePopularSearchTerms(7, 10);
   const { data: recentTerms } = useRecentSearchTerms(8, {
     enabled: searchQuery.length === 0,
   });
+  const clearRecentMutation = useClearRecentSearchTerms();
+
+  // count 평균 대비 1.5배 이상이면 HOT 인디케이터.
+  const popularAvgCount =
+    popularTerms != null && popularTerms.length > 0
+      ? popularTerms.reduce((acc, t) => acc + t.count, 0) / popularTerms.length
+      : 0;
 
   const results =
     searchQuery.length > 0
       ? (data?.pages ?? []).flatMap((p) => p.items.map(unifiedAuctionToAuctionItem))
       : [];
+  const totalCount = searchQuery.length > 0 ? data?.pages?.[0]?.totalCount ?? 0 : 0;
 
   const handleSubmit = () => {
     const trimmed = inputQuery.trim();
@@ -63,6 +74,26 @@ export default function SearchScreen() {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
+  };
+
+  const handleClearRecent = () => {
+    Alert.alert(
+      "최근 검색어 삭제",
+      "전체 검색 기록을 삭제하시겠어요?",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: () => clearRecentMutation.mutate({}),
+        },
+      ],
+    );
+  };
+
+  const handleSelectTerm = (term: string) => {
+    setInputQuery(term);
+    setSearchQuery(term);
   };
 
   return (
@@ -135,21 +166,15 @@ export default function SearchScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View
-            style={styles.suggestHint}
-            accessible={true}
-            accessibilityLabel="검색 가이드"
-          >
-            <Ionicons name="search" size={48} color={theme.border.strong} />
-            <Text style={[styles.hintText, { color: theme.text.tertiary }]}>
-              KAMCO·기관 공매 통합 검색 — 물건명·주소·공고명으로 찾아보세요
-            </Text>
-          </View>
           {recentTerms != null && recentTerms.length > 0 ? (
-            <View style={styles.chipSection}>
-              <Text style={[styles.chipSectionTitle, { color: theme.text.secondary }]}>
-                최근 검색
-              </Text>
+            <View style={styles.section}>
+              <SectionHeader
+                title="최근 검색"
+                action={clearRecentMutation.isPending ? "삭제 중…" : "전체 삭제"}
+                onActionPress={
+                  clearRecentMutation.isPending ? undefined : handleClearRecent
+                }
+              />
               <View style={styles.chipRow}>
                 {recentTerms.map((term) => (
                   <Pressable
@@ -157,13 +182,24 @@ export default function SearchScreen() {
                     accessible={true}
                     accessibilityLabel={`최근 검색어 ${term}`}
                     accessibilityRole="button"
-                    style={[styles.chip, { backgroundColor: theme.bg.surface, borderColor: theme.border.subtle }]}
-                    onPress={() => {
-                      setInputQuery(term);
-                      setSearchQuery(term);
-                    }}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: theme.bg.surface,
+                        borderColor: theme.border.subtle,
+                      },
+                    ]}
+                    onPress={() => handleSelectTerm(term)}
                   >
-                    <Text style={[styles.chipText, { color: theme.text.primary }]} numberOfLines={1}>
+                    <Ionicons
+                      name="time-outline"
+                      size={12}
+                      color={theme.text.tertiary}
+                    />
+                    <Text
+                      style={[styles.chipText, { color: theme.text.primary }]}
+                      numberOfLines={1}
+                    >
                       {term}
                     </Text>
                   </Pressable>
@@ -171,25 +207,158 @@ export default function SearchScreen() {
               </View>
             </View>
           ) : null}
+
           {popularTerms != null && popularTerms.length > 0 ? (
-            <View style={styles.chipSection}>
-              <Text style={[styles.chipSectionTitle, { color: theme.text.secondary }]}>
-                인기 검색
+            <View style={styles.section}>
+              <SectionHeader title="인기 검색" />
+              <View style={styles.rankList}>
+                {popularTerms.map((row, index) => {
+                  const rank = index + 1;
+                  const isTop3 = rank <= 3;
+                  const isHot =
+                    popularAvgCount > 0 && row.count >= popularAvgCount * 1.5;
+                  return (
+                    <Pressable
+                      key={`popular-${row.keyword}`}
+                      accessible={true}
+                      accessibilityLabel={`인기 검색어 ${rank}위 ${row.keyword}, ${row.count}회 검색됨${isHot ? ", 인기 급상승" : ""}`}
+                      accessibilityRole="button"
+                      style={({ pressed }) => [
+                        styles.rankItem,
+                        pressed && { backgroundColor: theme.bg.sunken },
+                      ]}
+                      onPress={() => handleSelectTerm(row.keyword)}
+                    >
+                      <Text
+                        style={[
+                          styles.rankNumber,
+                          {
+                            color: isTop3
+                              ? theme.brand.primary
+                              : theme.text.tertiary,
+                          },
+                        ]}
+                      >
+                        {rank}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.rankKeyword,
+                          { color: theme.text.primary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {row.keyword}
+                      </Text>
+                      {isHot ? (
+                        <View
+                          style={[
+                            styles.hotBadge,
+                            { backgroundColor: theme.brand.primary },
+                          ]}
+                        >
+                          <Ionicons
+                            name="flame"
+                            size={10}
+                            color={theme.brand.onPrimary}
+                          />
+                          <Text
+                            style={[
+                              styles.hotBadgeText,
+                              { color: theme.brand.onPrimary },
+                            ]}
+                          >
+                            HOT
+                          </Text>
+                        </View>
+                      ) : null}
+                      <Text
+                        style={[
+                          styles.rankCount,
+                          { color: theme.text.tertiary },
+                        ]}
+                      >
+                        {row.count.toLocaleString()}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
+
+          {(recentTerms == null || recentTerms.length === 0) &&
+          (popularTerms == null || popularTerms.length === 0) ? (
+            <View style={styles.suggestHint}>
+              <Ionicons name="search" size={48} color={theme.border.strong} />
+              <Text style={[styles.hintText, { color: theme.text.tertiary }]}>
+                KAMCO·기관 공매 통합 검색{"\n"}물건명·주소·공고명으로 찾아보세요
+              </Text>
+            </View>
+          ) : null}
+        </ScrollView>
+      ) : isLoading ? (
+        <ScrollView
+          contentContainerStyle={styles.skeletonContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <AuctionListSkeleton count={5} />
+        </ScrollView>
+      ) : results.length === 0 ? (
+        <ScrollView
+          contentContainerStyle={styles.emptyContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.emptyHero}>
+            <Ionicons
+              name="search-outline"
+              size={48}
+              color={theme.border.strong}
+            />
+            <Text
+              style={[styles.emptyTitle, { color: theme.text.primary }]}
+              numberOfLines={2}
+            >
+              "{searchQuery}"에 대한{"\n"}검색 결과가 없습니다
+            </Text>
+            <Text style={[styles.emptySub, { color: theme.text.tertiary }]}>
+              다른 키워드로 검색해 보세요
+            </Text>
+          </View>
+          {popularTerms != null && popularTerms.length > 0 ? (
+            <View style={styles.suggestSection}>
+              <Text
+                style={[styles.suggestTitle, { color: theme.text.secondary }]}
+              >
+                혹시 이 키워드로 찾으시나요?
               </Text>
               <View style={styles.chipRow}>
-                {popularTerms.map((row) => (
+                {popularTerms.slice(0, 6).map((row) => (
                   <Pressable
-                    key={`popular-${row.keyword}`}
+                    key={`suggest-${row.keyword}`}
                     accessible={true}
-                    accessibilityLabel={`인기 검색어 ${row.keyword}`}
+                    accessibilityLabel={`추천 검색어 ${row.keyword}`}
                     accessibilityRole="button"
-                    style={[styles.chip, { backgroundColor: theme.bg.surface, borderColor: theme.border.subtle }]}
-                    onPress={() => {
-                      setInputQuery(row.keyword);
-                      setSearchQuery(row.keyword);
-                    }}
+                    style={({ pressed }) => [
+                      styles.chip,
+                      {
+                        backgroundColor: pressed
+                          ? theme.bg.sunken
+                          : theme.bg.surface,
+                        borderColor: theme.border.subtle,
+                      },
+                    ]}
+                    onPress={() => handleSelectTerm(row.keyword)}
                   >
-                    <Text style={[styles.chipText, { color: theme.text.primary }]} numberOfLines={1}>
+                    <Ionicons
+                      name="trending-up"
+                      size={12}
+                      color={theme.brand.primary}
+                    />
+                    <Text
+                      style={[styles.chipText, { color: theme.text.primary }]}
+                      numberOfLines={1}
+                    >
                       {row.keyword}
                     </Text>
                   </Pressable>
@@ -198,21 +367,6 @@ export default function SearchScreen() {
             </View>
           ) : null}
         </ScrollView>
-      ) : isLoading ? (
-        <View style={styles.hint}>
-          <ActivityIndicator size="large" color={theme.brand.primary} />
-        </View>
-      ) : results.length === 0 ? (
-        <View style={styles.hint}>
-          <Ionicons
-            name="alert-circle-outline"
-            size={48}
-            color={theme.border.strong}
-          />
-          <Text style={[styles.hintText, { color: theme.text.tertiary }]}>
-            검색 결과가 없습니다
-          </Text>
-        </View>
       ) : (
         <FlashList
           data={results}
@@ -223,6 +377,22 @@ export default function SearchScreen() {
           showsVerticalScrollIndicator={false}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.3}
+          ListHeaderComponent={
+            <View
+              style={[
+                styles.resultHeader,
+                { borderBottomColor: theme.border.subtle },
+              ]}
+            >
+              <Text style={[styles.resultCount, { color: theme.text.secondary }]}>
+                검색 결과{" "}
+                <Text style={{ color: theme.brand.primary, fontFamily: FontFamily.bold }}>
+                  {totalCount.toLocaleString()}
+                </Text>
+                건
+              </Text>
+            </View>
+          }
           ListFooterComponent={
             isFetchingNextPage ? (
               <ActivityIndicator
@@ -268,21 +438,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: Spacing.xl,
+    paddingHorizontal: Spacing.page,
     paddingBottom: 60,
   },
   suggestHint: {
     justifyContent: "center",
     alignItems: "center",
     gap: Spacing.xl,
-    paddingVertical: Spacing.xxl,
+    paddingVertical: Spacing.xxl * 2,
     paddingHorizontal: Spacing.page,
   },
   hintText: {
     fontSize: FontSize.base,
     textAlign: "center",
+    lineHeight: 22,
   },
   listContent: {
-    paddingTop: Spacing.lg,
     paddingBottom: Spacing.section,
   },
   footerLoader: {
@@ -292,31 +463,111 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   suggestContent: {
+    paddingTop: Spacing.xxl,
     paddingBottom: Spacing.section,
   },
-  chipSection: {
-    paddingHorizontal: Spacing.page,
-    marginBottom: Spacing.xl,
-    gap: Spacing.md,
-  },
-  chipSectionTitle: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.semibold,
+  section: {
+    marginBottom: Spacing.section,
   },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.md,
+    paddingHorizontal: Spacing.page,
   },
   chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
     maxWidth: "100%",
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.lg,
+    paddingVertical: Spacing.sm + 1,
+    borderRadius: Radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
   },
   chipText: {
     fontSize: FontSize.sm,
     fontFamily: FontFamily.medium,
+  },
+  rankList: {
+    paddingHorizontal: Spacing.page,
+  },
+  rankItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xxl,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.md,
+  },
+  rankNumber: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.bold,
+    width: 20,
+    textAlign: "center",
+  },
+  rankKeyword: {
+    flex: 1,
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.medium,
+  },
+  rankCount: {
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.medium,
+    minWidth: 36,
+    textAlign: "right",
+  },
+  hotBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
+  },
+  hotBadgeText: {
+    fontSize: FontSize.xxs,
+    fontFamily: FontFamily.bold,
+    letterSpacing: 0.3,
+  },
+  resultHeader: {
+    paddingHorizontal: Spacing.page,
+    paddingVertical: Spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  resultCount: {
+    fontSize: FontSize.md,
+    fontFamily: FontFamily.medium,
+  },
+  skeletonContent: {
+    paddingTop: Spacing.lg,
+  },
+  emptyContent: {
+    paddingTop: Spacing.xxl * 2,
+    paddingBottom: Spacing.section,
+  },
+  emptyHero: {
+    alignItems: "center",
+    gap: Spacing.lg,
+    paddingHorizontal: Spacing.page,
+    marginBottom: Spacing.xxxl,
+  },
+  emptyTitle: {
+    fontSize: FontSize.lg,
+    fontFamily: FontFamily.semibold,
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  emptySub: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.regular,
+  },
+  suggestSection: {
+    gap: Spacing.lg,
+  },
+  suggestTitle: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.semibold,
+    paddingHorizontal: Spacing.page,
   },
 });
