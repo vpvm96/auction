@@ -29,7 +29,12 @@ export function RecentLoginTooltip({
   return (
     <View pointerEvents="none" style={wrapperStyle}>
       <View style={[styles.bubble, { backgroundColor: bg }]}>
-        <Text style={[styles.text, { color: textColor }]}>최근 로그인</Text>
+        <Text
+          style={[styles.text, { color: textColor }]}
+          numberOfLines={1}
+        >
+          최근 로그인
+        </Text>
       </View>
       <View
         style={[
@@ -57,8 +62,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   alignCenter: {
-    left: 0,
-    right: 0,
+    left: '50%',
+    transform: [{ translateX: '-50%' }],
   },
   alignStart: {
     left: 0,

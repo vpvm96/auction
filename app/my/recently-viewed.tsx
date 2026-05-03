@@ -56,8 +56,11 @@ export default function RecentlyViewedScreen() {
           최근 본 물건
         </Text>
         {items.length > 0 ? (
-          <Pressable onPress={clear} hitSlop={8}>
-            <Text style={[styles.clearText, { color: theme.text.secondary }]}>
+          <Pressable onPress={clear} hitSlop={8} style={styles.clearButton}>
+            <Text
+              style={[styles.clearText, { color: theme.text.secondary }]}
+              numberOfLines={1}
+            >
               전체 삭제
             </Text>
           </Pressable>
@@ -128,13 +131,15 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.xl,
   },
   navSpacer: {
-    width: 40,
+    width: 60,
+  },
+  clearButton: {
+    minWidth: 60,
+    alignItems: "flex-end",
   },
   clearText: {
     fontSize: FontSize.sm,
     fontFamily: FontFamily.semibold,
-    width: 40,
-    textAlign: "right",
   },
   loadingContainer: {
     flex: 1,
