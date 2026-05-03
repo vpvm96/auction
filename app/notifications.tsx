@@ -4,8 +4,8 @@ import { FlashList } from '@shopify/flash-list'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
-import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { useState } from 'react'
+import { FontFamily, FontSize, IconSize, Radius, Spacing } from '@/constants/tokens'
 import {
   markAllNotificationsRead,
   markNotificationRead,
@@ -98,6 +98,22 @@ function NotifSeparator() {
   return <View style={[styles.separator, { backgroundColor: theme.border.default }]} />
 }
 
+function createNotifRenderItem(onMarkRead: (id: number) => void) {
+  const NotifRenderItem = ({ item }: { item: NotificationResponse }) => (
+    <NotificationRow
+      id={item.id}
+      title={item.title}
+      body={item.body}
+      date={formatDate(item.createdAt)}
+      kind={classifyType(item.type)}
+      isRead={item.isRead}
+      onMarkRead={onMarkRead}
+    />
+  )
+  NotifRenderItem.displayName = 'NotifRenderItem'
+  return NotifRenderItem
+}
+
 export default function NotificationsScreen() {
   const theme = useTheme()
   const queryClient = useQueryClient()
@@ -130,10 +146,8 @@ export default function NotificationsScreen() {
     onSuccess: invalidateNotifications,
   })
 
-  const handleMarkRead = useCallback(
-    (id: number) => markReadMutation.mutate(id),
-    [markReadMutation],
-  )
+  const handleMarkRead = (id: number) => markReadMutation.mutate(id)
+  const renderNotifItem = createNotifRenderItem(handleMarkRead)
 
   const handleMarkAllRead = () => markAllReadMutation.mutate()
 
@@ -151,18 +165,6 @@ export default function NotificationsScreen() {
       fetchNextPage()
     }
   }
-
-  const renderNotifItem = ({ item }: { item: NotificationResponse }) => (
-    <NotificationRow
-      id={item.id}
-      title={item.title}
-      body={item.body}
-      date={formatDate(item.createdAt)}
-      kind={classifyType(item.type)}
-      isRead={item.isRead}
-      onMarkRead={handleMarkRead}
-    />
-  )
 
   const renderFooter = () => {
     if (!isFetchingNextPage) return null
@@ -283,8 +285,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   notifIcon: {
-    width: 36,
-    height: 36,
+    width: IconSize.sm,
+    height: IconSize.sm,
     borderRadius: Radius.xxl,
     justifyContent: 'center',
     alignItems: 'center',

@@ -20,7 +20,9 @@ describe('Dashboard API', () => {
 
     await fetchDashboardSummary()
 
-    expect(mockedApiClient).toHaveBeenCalledWith('/dashboard/summary')
+    expect(mockedApiClient).toHaveBeenCalledWith(
+      '/hammers/hammer-auctions/dashboard/summary',
+    )
   })
 
   it('should bucket categories into real estate vs vehicle', () => {

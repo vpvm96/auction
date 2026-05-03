@@ -32,7 +32,9 @@ describe('Search API', () => {
 
     await searchAuctions({ keyword: 'test', page: 1 })
 
-    expect(mockedApiClient).toHaveBeenCalledWith('/search/auctions?keyword=test&page=1')
+    expect(mockedApiClient).toHaveBeenCalledWith(
+      '/hammers/hammer-auctions/search/auctions?keyword=test&page=1',
+    )
   })
 
   it('should call GET /search/popular', async () => {
@@ -41,7 +43,9 @@ describe('Search API', () => {
 
     await fetchPopularSearchTerms({ days: 7, limit: 10 })
 
-    expect(mockedApiClient).toHaveBeenCalledWith('/search/popular?days=7&limit=10')
+    expect(mockedApiClient).toHaveBeenCalledWith(
+      '/hammers/hammer-auctions/search/popular?days=7&limit=10',
+    )
   })
 
   it('should call GET /search/recent', async () => {
@@ -50,7 +54,9 @@ describe('Search API', () => {
 
     await fetchRecentSearchTerms({ limit: 5 })
 
-    expect(mockedApiClient).toHaveBeenCalledWith('/search/recent?limit=5')
+    expect(mockedApiClient).toHaveBeenCalledWith(
+      '/hammers/hammer-auctions/search/recent?limit=5',
+    )
   })
 
   it('should call DELETE /search/recent', async () => {
@@ -60,7 +66,7 @@ describe('Search API', () => {
     await clearRecentSearchTerms()
 
     expect(mockedApiClient).toHaveBeenCalledWith(
-      '/search/recent',
+      '/hammers/hammer-auctions/search/recent',
       expect.objectContaining({ method: 'DELETE' }),
     )
   })

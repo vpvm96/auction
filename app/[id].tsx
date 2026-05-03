@@ -21,6 +21,7 @@ import { useAuctionDetail } from "@/lib/queries/auctions";
 import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
 import { useRecentlyViewedStore } from "@/lib/store/useRecentlyViewedStore";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { Image, type ImageSource } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -415,7 +416,7 @@ export default function DetailScreen() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const numericId = Number(id);
-  const { data: rawItem, isLoading, isError } = useAuctionDetail(numericId);
+  const { data: rawItem, isLoading, isError, refetch, isRefetching } = useAuctionDetail(numericId);
   const auction = rawItem != null ? toAuctionItem(rawItem) : null;
 
   const isFavorited = useFavoritesStore((s) => s.favoriteIds.has(id ?? ""));
@@ -494,17 +495,37 @@ export default function DetailScreen() {
           <Ionicons
             name="alert-circle-outline"
             size={48}
-            color={theme.text.tertiary}
+            color={theme.status.danger}
           />
-          <Text style={[styles.notFoundText, { color: theme.text.tertiary }]}>
-            물건을 찾을 수 없습니다.
+          <Text style={[styles.notFoundText, { color: theme.text.primary }]}>
+            물건을 불러오지 못했습니다
           </Text>
+          <Text style={[styles.errorMessage, { color: theme.text.secondary }]}>
+            네트워크 상태를 확인 후 다시 시도해주세요.
+          </Text>
+          <Pressable
+            accessible={true}
+            accessibilityLabel="다시 시도"
+            accessibilityRole="button"
+            style={[
+              styles.retryButton,
+              { backgroundColor: theme.brand.primary },
+              isRefetching ? styles.retryButtonDisabled : null,
+            ]}
+            onPress={() => refetch()}
+            disabled={isRefetching}
+          >
+            <Text style={[styles.retryButtonText, { color: theme.brand.onPrimary }]}>
+              {isRefetching ? "다시 시도 중..." : "다시 시도"}
+            </Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
   }
 
   const handleFavorite = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     toggle(auction.id);
   };
 
@@ -709,13 +730,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    gap: Spacing.xl,
+    paddingHorizontal: Spacing.section,
+    gap: Spacing.md,
   },
   navPlaceholder: {
     width: 24,
   },
   notFoundText: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.lg,
+    fontFamily: FontFamily.bold,
+    marginTop: Spacing.sm,
+  },
+  errorMessage: {
+    fontSize: FontSize.sm,
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: Spacing.lg,
+    paddingHorizontal: Spacing.section,
+    paddingVertical: Spacing.xl,
+    borderRadius: Radius.lg,
+  },
+  retryButtonDisabled: {
+    opacity: 0.6,
+  },
+  retryButtonText: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.bold,
   },
   navBar: {
     flexDirection: "row",

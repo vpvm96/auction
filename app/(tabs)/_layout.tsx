@@ -2,6 +2,12 @@ import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import { StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
+import { useEffect } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 import { FontFamily } from '@/constants/tokens'
 
@@ -13,8 +19,24 @@ interface TabIconProps {
   color: string
 }
 
+const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons)
+
 function TabIcon({ name, focused, color }: TabIconProps) {
-  return <Ionicons name={name} size={24} color={color} />
+  const scale = useSharedValue(focused ? 1 : 0.9)
+
+  useEffect(() => {
+    scale.set(withTiming(focused ? 1.1 : 1, { duration: 180 }))
+  }, [focused, scale])
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.get() }],
+  }))
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <AnimatedIonicons name={name} size={24} color={color} />
+    </Animated.View>
+  )
 }
 
 export default function TabLayout() {

@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -68,10 +69,21 @@ export default function InstitutionScreen() {
 
   const activeTab = FILTER_TABS.find((t) => t.key === selectedKey);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, refetch } =
     useInstitutionAuctions({ category: activeTab?.category });
 
   const allItems = (data?.pages ?? []).flatMap((p) => p.items);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleEndReached = () => {
     if (!isFocused) return;
@@ -175,6 +187,14 @@ export default function InstitutionScreen() {
           showsVerticalScrollIndicator={false}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.3}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.brand.primary}
+              colors={[theme.brand.primary]}
+            />
+          }
           ListFooterComponent={
             isFetchingNextPage ? (
               <ActivityIndicator

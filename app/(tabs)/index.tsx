@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { FlashList } from '@shopify/flash-list'
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useTheme, useIsDark } from '@/hooks/useTheme'
 import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
 import { StatsCard } from '@/components/home/stats-card'
@@ -37,7 +37,7 @@ const LOGO_BG_DARK = '#2A2A3A'
 type Section =
   | { kind: 'news' }
   | { kind: 'stats-loading' }
-  | { kind: 'stats-error' }
+  | { kind: 'stats-error'; onRetry: () => void }
   | { kind: 'stats'; stats: AuctionStats }
   | { kind: 'quiz' }
   | { kind: 'date'; scheduleDateKeys: Set<string> | undefined }
@@ -164,8 +164,7 @@ const renderSection = ({ item }: { item: Section }) => {
     case 'stats-loading':
       return <StatsCardSkeleton />
     case 'stats-error':
-      // onRetry는 extraData로 갱신되도록 부모에서 주입
-      return null
+      return <StatsErrorView onRetry={item.onRetry} />
     case 'stats':
       return <StatsCard realEstate={item.stats.realEstate} personal={item.stats.personal} />
     case 'quiz':
@@ -188,18 +187,18 @@ export default function HomeScreen() {
 
   const [refreshing, setRefreshing] = useState(false)
 
-  const handleRefresh = useCallback(async () => {
+  const handleRefresh = async () => {
     setRefreshing(true)
     try {
       await Promise.all([dashboardQuery.refetch(), calendarQuery.refetch()])
     } finally {
       setRefreshing(false)
     }
-  }, [dashboardQuery, calendarQuery])
+  }
 
-  const handleStatsRetry = useCallback(() => {
+  const handleStatsRetry = () => {
     dashboardQuery.refetch()
-  }, [dashboardQuery])
+  }
 
   // Stats 섹션 상태 결정
   // - 비로그인: 항상 MOCK 데이터 표시
@@ -212,7 +211,7 @@ export default function HomeScreen() {
   } else if (dashboardQuery.isLoading) {
     statsSection = { kind: 'stats-loading' }
   } else if (dashboardQuery.isError && dashboardQuery.data == null) {
-    statsSection = { kind: 'stats-error' }
+    statsSection = { kind: 'stats-error', onRetry: handleStatsRetry }
   } else if (dashboardQuery.data != null) {
     statsSection = {
       kind: 'stats',
@@ -243,20 +242,12 @@ export default function HomeScreen() {
     { kind: 'categories' },
   ]
 
-  // stats-error 섹션은 onRetry 콜백이 필요해서 별도 렌더러로 처리
-  const renderItem = ({ item }: { item: Section }) => {
-    if (item.kind === 'stats-error') {
-      return <StatsErrorView onRetry={handleStatsRetry} />
-    }
-    return renderSection({ item })
-  }
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
       <Header auctionStats={headerStats} />
       <FlashList
         data={sections}
-        renderItem={renderItem}
+        renderItem={renderSection}
         keyExtractor={(item) => item.kind}
         getItemType={getSectionType}
         contentContainerStyle={styles.content}

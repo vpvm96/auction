@@ -9,7 +9,7 @@ import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
 import { useIsFocused } from "@react-navigation/native";
 import { FlashList } from "@shopify/flash-list";
 import { useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Pressable,
@@ -96,30 +96,31 @@ export default function ListScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
 
-  const handleRefresh = useCallback(async () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
     try {
       await refetch();
     } finally {
       setRefreshing(false);
     }
-  }, [refetch]);
+  };
 
   const allItems = (data?.pages ?? []).flatMap((p) =>
     p.items.map(toAuctionItem),
   );
   const totalCount = data?.pages?.[0]?.totalCount ?? 0;
 
-  let sorted = allItems;
-  if (selectedSort === "deadline") {
-    sorted = [...allItems].sort((a, b) =>
-      a.auctionDate.localeCompare(b.auctionDate),
-    );
-  } else if (selectedSort === "price_asc") {
-    sorted = [...allItems].sort((a, b) => a.minimumBid - b.minimumBid);
-  } else if (selectedSort === "price_desc") {
-    sorted = [...allItems].sort((a, b) => b.minimumBid - a.minimumBid);
-  }
+  // "latest"는 allItems 그대로 (배열 ref 유지). 정렬이 필요한 경우만 새 배열을 만든다.
+  const sorted =
+    selectedSort === "latest"
+      ? allItems
+      : selectedSort === "deadline"
+        ? [...allItems].sort((a, b) =>
+            a.auctionDate.localeCompare(b.auctionDate),
+          )
+        : selectedSort === "price_asc"
+          ? [...allItems].sort((a, b) => a.minimumBid - b.minimumBid)
+          : [...allItems].sort((a, b) => b.minimumBid - a.minimumBid);
 
   const handleEndReached = () => {
     if (!isFocused) return;
@@ -251,6 +252,11 @@ export default function ListScreen() {
           getItemType={getAuctionItemType}
           drawDistance={800}
           extraData={favoriteIds}
+          // FlashList v2의 maintainVisibleContentPosition은 기본 ON이며,
+          // 무한스크롤로 페이지가 추가될 때 데이터 ref가 바뀌면 visible anchor를
+          // 잘못 계산해 "기존 항목들이 위로 튕겨 올라가는" 점프가 발생한다.
+          // 우리는 항상 끝에만 append하므로 비활성화한다.
+          maintainVisibleContentPosition={{ disabled: true }}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           onEndReached={handleEndReached}

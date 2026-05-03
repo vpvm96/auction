@@ -5,15 +5,13 @@ import {
   fetchUnreadNotificationCount,
   type NotificationListParams,
 } from '@/lib/api/notifications'
-import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useAuthGuard } from './useAuthGuard'
 import { queryKeys } from './keys'
 
 export function useNotifications(
   params: Omit<NotificationListParams, 'page'> = {},
   options?: { enabled?: boolean },
 ) {
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-
   return useInfiniteQuery({
     queryKey: queryKeys.notifications.list(params),
     queryFn: ({ pageParam }) =>
@@ -23,26 +21,22 @@ export function useNotifications(
       const hasMore = lastPage.page < lastPage.totalPages
       return hasMore ? lastPage.page + 1 : undefined
     },
-    enabled: isLoggedIn && options?.enabled !== false,
+    enabled: useAuthGuard(options?.enabled),
   })
 }
 
 export function useUnreadNotificationCount(options?: { enabled?: boolean }) {
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-
   return useQuery({
     queryKey: queryKeys.notifications.unreadCount(),
     queryFn: fetchUnreadNotificationCount,
-    enabled: isLoggedIn && options?.enabled !== false,
+    enabled: useAuthGuard(options?.enabled),
   })
 }
 
 export function useNotificationSettings(options?: { enabled?: boolean }) {
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-
   return useQuery({
     queryKey: queryKeys.notifications.settings(),
     queryFn: fetchNotificationSettings,
-    enabled: isLoggedIn && options?.enabled !== false,
+    enabled: useAuthGuard(options?.enabled),
   })
 }

@@ -60,6 +60,9 @@ export function login(body: LoginRequest): Promise<LoginResponse> {
     method: "POST",
     body: JSON.stringify(body),
     skipAuth: true,
+    // refresh token이 HttpOnly 쿠키로 내려오므로 응답 Set-Cookie를 받기 위해 필수.
+    // 누락 시 refresh가 항상 실패하여 access token 만료 직후 자동 로그아웃이 발생한다.
+    credentials: "include",
   });
 }
 

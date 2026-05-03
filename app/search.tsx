@@ -319,7 +319,7 @@ export default function SearchScreen() {
               style={[styles.emptyTitle, { color: theme.text.primary }]}
               numberOfLines={2}
             >
-              "{searchQuery}"에 대한{"\n"}검색 결과가 없습니다
+              &ldquo;{searchQuery}&rdquo;에 대한{"\n"}검색 결과가 없습니다
             </Text>
             <Text style={[styles.emptySub, { color: theme.text.tertiary }]}>
               다른 키워드로 검색해 보세요

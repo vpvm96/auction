@@ -6,7 +6,7 @@ import {
   searchAuctions,
 } from '@/lib/api/search'
 import type { ClearRecentSearchParams, SearchAuctionsParams } from '@/lib/api/search'
-import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useAuthGuard } from './useAuthGuard'
 import { queryKeys } from './keys'
 
 /** 통합 검색 (KAMCO + 기관 공매), 무한 스크롤 */
@@ -14,7 +14,6 @@ export function useUnifiedSearchAuctions(
   params: Omit<SearchAuctionsParams, 'page'> = {},
   options?: { enabled?: boolean },
 ) {
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   const { keyword, size, userId } = params
 
   return useInfiniteQuery({
@@ -31,7 +30,7 @@ export function useUnifiedSearchAuctions(
       const hasMore = lastPage.page < lastPage.totalPages
       return hasMore ? lastPage.page + 1 : undefined
     },
-    enabled: isLoggedIn && options?.enabled !== false,
+    enabled: useAuthGuard(options?.enabled),
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   })
@@ -42,12 +41,10 @@ export function usePopularSearchTerms(
   limit?: number,
   options?: { enabled?: boolean },
 ) {
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-
   return useQuery({
     queryKey: queryKeys.search.popular(days, limit),
     queryFn: () => fetchPopularSearchTerms({ days, limit }),
-    enabled: isLoggedIn && options?.enabled !== false,
+    enabled: useAuthGuard(options?.enabled),
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   })
@@ -57,12 +54,10 @@ export function useRecentSearchTerms(
   limit?: number,
   options?: { enabled?: boolean },
 ) {
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-
   return useQuery({
     queryKey: queryKeys.search.recent(limit),
     queryFn: () => fetchRecentSearchTerms({ limit }),
-    enabled: isLoggedIn && options?.enabled !== false,
+    enabled: useAuthGuard(options?.enabled),
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   })

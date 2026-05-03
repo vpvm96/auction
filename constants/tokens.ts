@@ -119,3 +119,29 @@ export const Shadow = {
 // ─── Hit Slop ────────────────────────────────────────────────────────────────
 /** Standard hit slop for small icon buttons */
 export const HIT_SLOP = 8 as const
+
+// ─── Icon / Component Sizes ─────────────────────────────────────────────────
+/**
+ * 아이콘 래퍼 크기 (정사각형 width=height).
+ * 카테고리 그리드 아이콘, 소셜 로그인 아이콘, 알림 리스트 아이콘 등에 사용.
+ */
+export const IconSize = {
+  /** 36 — 알림 리스트 아이콘, 날짜 셀 */
+  sm: 36,
+  /** 44 — 중간 사이즈 아이콘 컨테이너 */
+  md: 44,
+  /** 52 — 카테고리 그리드, 소셜 로그인 아이콘 버튼 */
+  lg: 52,
+} as const
+
+/**
+ * 공용 컴포넌트 사이즈 토큰.
+ * 입력창/버튼 높이, 로고 사이즈 등 반복되는 magic number를 제거하기 위함.
+ */
+export const ComponentSize = {
+  /** 54 — 표준 입력창/메인 CTA 버튼 높이 */
+  inputHeight: 54,
+  /** 280 × 160 — 인증 화면 로고 영역 */
+  authLogoWidth: 280,
+  authLogoHeight: 160,
+} as const

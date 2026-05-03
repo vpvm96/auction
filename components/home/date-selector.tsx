@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
-import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { FontFamily, FontSize, IconSize, Radius, Spacing } from '@/constants/tokens'
 import { useState } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 
@@ -185,9 +185,9 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
   },
   dateCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: IconSize.sm,
+    height: IconSize.sm,
+    borderRadius: IconSize.sm / 2,
     justifyContent: 'center',
     alignItems: 'center',
   },

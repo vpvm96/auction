@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Path, G } from 'react-native-svg'
 import { Ionicons } from '@expo/vector-icons'
-import { FontFamily, FontSize, Radius, Spacing } from '@/constants/tokens'
+import { FontFamily, FontSize, IconSize, Radius, Spacing } from '@/constants/tokens'
 import { useTheme, useIsDark } from '@/hooks/useTheme'
 import type { ColorTheme } from '@/constants/theme'
 
@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.semibold,
   },
   iconButton: {
-    width: 52,
-    height: 52,
+    width: IconSize.lg,
+    height: IconSize.lg,
     borderRadius: Radius.full,
     justifyContent: 'center',
     alignItems: 'center',

@@ -1,13 +1,19 @@
+import { RecentLoginTooltip } from "@/components/auth/recent-login-tooltip";
 import { SocialLoginButton } from "@/components/auth/social-login-button";
-import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
+import { ComponentSize, FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
-import { SAVED_EMAIL_KEY } from "@/lib/auth/storage-keys";
+import {
+    LAST_LOGIN_METHOD_KEY,
+    SAVED_EMAIL_KEY,
+    type LastLoginMethod,
+} from "@/lib/auth/storage-keys";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     KeyboardAvoidingView,
     Platform,
@@ -29,6 +35,9 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberEmail, setRememberEmail] = useState(false);
+  const [lastLoginMethod, setLastLoginMethod] = useState<LastLoginMethod | null>(
+    null,
+  );
 
   const login = useAuthStore((s) => s.login);
   const oauthLogin = useAuthStore((s) => s.oauthLogin);
@@ -48,13 +57,33 @@ export default function LoginScreen() {
         setRememberEmail(true);
       }
     });
+    AsyncStorage.getItem(LAST_LOGIN_METHOD_KEY).then((method) => {
+      if (
+        method === "email" ||
+        method === "kakao" ||
+        method === "naver" ||
+        method === "google" ||
+        method === "apple"
+      ) {
+        setLastLoginMethod(method);
+      }
+    });
   }, []);
 
   useEffect(() => {
     if (isLoggedIn) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)");
     }
   }, [isLoggedIn]);
+
+  const lastErrorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (error != null && error !== lastErrorRef.current) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+    lastErrorRef.current = error;
+  }, [error]);
 
   const handleLogin = async () => {
     clearError();
@@ -209,28 +238,38 @@ export default function LoginScreen() {
             </Pressable>
           </View>
 
-          <Pressable
-            accessible={true}
-            accessibilityLabel="로그인"
-            accessibilityRole="button"
-            accessibilityState={{ disabled: isLoading }}
-            accessibilityHint={
-              isLoading ? "로그인 중입니다" : "이메일과 비밀번호로 로그인합니다"
-            }
-            style={[
-              styles.loginButton,
-              { backgroundColor: theme.brand.primary },
-              isLoading ? styles.loginButtonDisabled : null,
-            ]}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            <Text
-              style={[styles.loginButtonText, { color: theme.brand.onPrimary }]}
+          <View style={styles.loginButtonWrapper}>
+            {lastLoginMethod === "email" ? (
+              <RecentLoginTooltip position="top" />
+            ) : null}
+            <Pressable
+              accessible={true}
+              accessibilityLabel="로그인"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isLoading }}
+              accessibilityHint={
+                isLoading
+                  ? "로그인 중입니다"
+                  : "이메일과 비밀번호로 로그인합니다"
+              }
+              style={[
+                styles.loginButton,
+                { backgroundColor: theme.brand.primary },
+                isLoading ? styles.loginButtonDisabled : null,
+              ]}
+              onPress={handleLogin}
+              disabled={isLoading}
             >
-              {isLoading ? "로그인 중..." : "로그인"}
-            </Text>
-          </Pressable>
+              <Text
+                style={[
+                  styles.loginButtonText,
+                  { color: theme.brand.onPrimary },
+                ]}
+              >
+                {isLoading ? "로그인 중..." : "로그인"}
+              </Text>
+            </Pressable>
+          </View>
 
           <View style={styles.dividerRow}>
             <View
@@ -251,28 +290,48 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.socialRow}>
-            <SocialLoginButton
-              provider="kakao"
-              variant="icon"
-              onPress={() => handleSocialLogin("kakao")}
-            />
-            <SocialLoginButton
-              provider="naver"
-              variant="icon"
-              onPress={() => handleSocialLogin("naver")}
-            />
-            {Platform.OS === "ios" ? (
+            <View style={styles.socialButtonWrapper}>
+              {lastLoginMethod === "kakao" ? (
+                <RecentLoginTooltip position="top" />
+              ) : null}
               <SocialLoginButton
-                provider="apple"
+                provider="kakao"
                 variant="icon"
-                onPress={() => handleSocialLogin("apple")}
+                onPress={() => handleSocialLogin("kakao")}
               />
+            </View>
+            <View style={styles.socialButtonWrapper}>
+              {lastLoginMethod === "naver" ? (
+                <RecentLoginTooltip position="top" />
+              ) : null}
+              <SocialLoginButton
+                provider="naver"
+                variant="icon"
+                onPress={() => handleSocialLogin("naver")}
+              />
+            </View>
+            {Platform.OS === "ios" ? (
+              <View style={styles.socialButtonWrapper}>
+                {lastLoginMethod === "apple" ? (
+                  <RecentLoginTooltip position="top" />
+                ) : null}
+                <SocialLoginButton
+                  provider="apple"
+                  variant="icon"
+                  onPress={() => handleSocialLogin("apple")}
+                />
+              </View>
             ) : null}
-            <SocialLoginButton
-              provider="google"
-              variant="icon"
-              onPress={() => handleSocialLogin("google")}
-            />
+            <View style={styles.socialButtonWrapper}>
+              {lastLoginMethod === "google" ? (
+                <RecentLoginTooltip position="top" />
+              ) : null}
+              <SocialLoginButton
+                provider="google"
+                variant="icon"
+                onPress={() => handleSocialLogin("google")}
+              />
+            </View>
           </View>
 
           <View style={styles.signupRow}>
@@ -308,8 +367,8 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
   },
   logo: {
-    width: 280,
-    height: 160,
+    width: ComponentSize.authLogoWidth,
+    height: ComponentSize.authLogoHeight,
   },
   form: {
     gap: 14,
@@ -320,7 +379,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     borderWidth: 1,
     paddingHorizontal: 22,
-    height: 54,
+    height: ComponentSize.inputHeight,
   },
   input: {
     flex: 1,
@@ -354,12 +413,15 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontFamily: FontFamily.medium,
   },
+  loginButtonWrapper: {
+    position: "relative",
+    marginBottom: 28,
+  },
   loginButton: {
     borderRadius: Radius.full,
-    height: 54,
+    height: ComponentSize.inputHeight,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 28,
   },
   loginButtonDisabled: {
     opacity: 0.6,
@@ -387,6 +449,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: Spacing.xxl,
     marginBottom: 44,
+  },
+  socialButtonWrapper: {
+    position: "relative",
   },
   signupRow: {
     flexDirection: "row",

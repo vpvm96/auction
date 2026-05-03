@@ -15,6 +15,8 @@ function jsonResponse(body: unknown, status = 200): Response {
     ok: status >= 200 && status < 300,
     status,
     statusText: `status ${status}`,
+    headers: new Headers({ "content-type": "application/json" }),
+    url: "",
     json: async () => body,
     text: async () => (typeof body === "string" ? body : JSON.stringify(body)),
   } as unknown as Response;
@@ -25,6 +27,8 @@ function emptyResponse(status: number): Response {
     ok: status >= 200 && status < 300,
     status,
     statusText: `status ${status}`,
+    headers: new Headers(),
+    url: "",
     json: async () => ({}),
     text: async () => "",
   } as unknown as Response;

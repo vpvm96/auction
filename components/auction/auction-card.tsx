@@ -9,6 +9,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { formatPrice, formatShortDate } from "@/lib/format";
 import type { AuctionItem } from "@/lib/mock-data";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { Image, type ImageSource } from "expo-image";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -61,6 +62,7 @@ export function AuctionCard({
   };
 
   const handleFavorite = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggleFavorite(id);
   };
 

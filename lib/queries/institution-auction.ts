@@ -4,14 +4,13 @@ import {
   fetchInstitutionAuctions,
 } from '@/lib/api/institution-auction'
 import type { InstitutionAuctionListParams } from '@/lib/api/institution-auction'
-import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useAuthGuard } from './useAuthGuard'
 import { queryKeys } from './keys'
 
 export function useInstitutionAuctions(
   params: Omit<InstitutionAuctionListParams, 'page'> = {},
   options?: { enabled?: boolean },
 ) {
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   const { org, category, keyword, size } = params
 
   return useInfiniteQuery({
@@ -29,21 +28,20 @@ export function useInstitutionAuctions(
       const hasMore = lastPage.page < lastPage.totalPages
       return hasMore ? lastPage.page + 1 : undefined
     },
-    enabled: isLoggedIn && options?.enabled !== false,
+    enabled: useAuthGuard(options?.enabled),
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   })
 }
 
 export function useInstitutionAuctionDetail(id: number | string, options?: { enabled?: boolean }) {
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   const idStr = String(id)
   const enabledId = idStr.length > 0 && idStr !== '0' && idStr !== 'NaN'
 
   return useQuery({
     queryKey: queryKeys.institutionAuction.detail(id),
     queryFn: () => fetchInstitutionAuctionDetail(id),
-    enabled: isLoggedIn && enabledId && options?.enabled !== false,
+    enabled: useAuthGuard(enabledId && options?.enabled !== false),
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   })

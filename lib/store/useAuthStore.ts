@@ -16,7 +16,7 @@ import {
   OAuthSignInError,
   type SocialProviderKey,
 } from '@/lib/auth/oauth'
-import { SAVED_EMAIL_KEY } from '@/lib/auth/storage-keys'
+import { LAST_LOGIN_METHOD_KEY } from '@/lib/auth/storage-keys'
 
 interface AuthUser {
   id?: string
@@ -75,6 +75,7 @@ export const useAuthStore = create<AuthStore>()(
           try {
             const res = await authApi.login({ email, password })
             await setAccessToken(res.accessToken)
+            await AsyncStorage.setItem(LAST_LOGIN_METHOD_KEY, 'email')
 
             resetForceLogoutFlag()
             set({
@@ -107,6 +108,7 @@ export const useAuthStore = create<AuthStore>()(
               agreeToTerms: true,
             })
             await setAccessToken(loginRes.accessToken)
+            await AsyncStorage.setItem(LAST_LOGIN_METHOD_KEY, provider)
 
             resetForceLogoutFlag()
             set({
@@ -190,12 +192,10 @@ export const useAuthStore = create<AuthStore>()(
             // 서버 로그아웃 실패해도 로컬 정리는 진행
           }
           await removeAccessToken()
-          // 아이디 저장 값은 로그아웃 후에도 다음 로그인 화면에서 복원되어야 하므로 clear() 전후로 보존
-          const savedEmail = await AsyncStorage.getItem(SAVED_EMAIL_KEY)
-          await AsyncStorage.clear()
-          if (savedEmail != null) {
-            await AsyncStorage.setItem(SAVED_EMAIL_KEY, savedEmail)
-          }
+          // AsyncStorage.clear()는 favorites / theme / recently-viewed 등 사용자 데이터까지
+          // 모두 날린다. 강제 로그아웃(refresh 실패) 시에도 이 함수가 호출되므로,
+          // 인증과 직접 관련된 키만 선별해서 제거한다.
+          await AsyncStorage.multiRemove(['auth-storage'])
           set({ user: null, isLoggedIn: false, error: null })
         },
 
