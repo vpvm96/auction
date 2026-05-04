@@ -38,35 +38,46 @@ export function fetchNotifications(
   params: NotificationListParams = {},
 ): Promise<PagedResponse<NotificationResponse>> {
   const qs = buildQueryString({ page: 1, size: 20, ...params })
-  return apiClient<PagedResponse<NotificationResponse>>(`/notifications${qs}`)
+  return apiClient<PagedResponse<NotificationResponse>>(
+    `/hammers/hammer-auctions/notifications${qs}`,
+  )
 }
 
 /** GET /notifications/unread-count — 읽지 않은 알림 수 */
 export function fetchUnreadNotificationCount(): Promise<number> {
-  return apiClient<number>('/notifications/unread-count')
+  return apiClient<number>('/hammers/hammer-auctions/notifications/unread-count')
 }
 
 /** PATCH /notifications/{id}/read — 알림 읽음 처리 */
 export function markNotificationRead(id: number): Promise<void> {
-  return apiClient<void>(`/notifications/${id}/read`, { method: 'PATCH' })
+  return apiClient<void>(`/hammers/hammer-auctions/notifications/${id}/read`, {
+    method: 'PATCH',
+  })
 }
 
 /** PATCH /notifications/read-all — 모든 알림 읽음 처리 */
 export function markAllNotificationsRead(): Promise<void> {
-  return apiClient<void>('/notifications/read-all', { method: 'PATCH' })
+  return apiClient<void>('/hammers/hammer-auctions/notifications/read-all', {
+    method: 'PATCH',
+  })
 }
 
 /** GET /notifications/settings — 알림 설정 조회 */
 export function fetchNotificationSettings(): Promise<NotificationSettingsResponse> {
-  return apiClient<NotificationSettingsResponse>('/notifications/settings')
+  return apiClient<NotificationSettingsResponse>(
+    '/hammers/hammer-auctions/notifications/settings',
+  )
 }
 
 /** PUT /notifications/settings — 알림 설정 변경 */
 export function updateNotificationSettings(
   body: UpdateNotificationSettingsRequest,
 ): Promise<NotificationSettingsResponse> {
-  return apiClient<NotificationSettingsResponse>('/notifications/settings', {
-    method: 'PUT',
-    body: JSON.stringify(body),
-  })
+  return apiClient<NotificationSettingsResponse>(
+    '/hammers/hammer-auctions/notifications/settings',
+    {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    },
+  )
 }

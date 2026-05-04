@@ -6,8 +6,9 @@ import { useAuctionsByIds } from "@/lib/queries/auctions";
 import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 
 function EmptyState() {
@@ -66,7 +67,7 @@ export default function FavoritesScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.brand.primary} />
+          <LoadingSpinner size="medium" />
         </View>
       ) : favoriteItems.length === 0 ? (
         <EmptyState />

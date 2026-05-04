@@ -4,16 +4,16 @@ import { FlashList } from '@shopify/flash-list'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FontFamily, FontSize, IconSize, Radius, Spacing } from '@/constants/tokens'
 import {
   markAllNotificationsRead,
-  markNotificationRead,
   type NotificationResponse,
 } from '@/lib/api/notifications'
 import { useNotifications } from '@/lib/queries/notifications'
 import { queryKeys } from '@/lib/queries/keys'
 import { useTheme } from '@/hooks/useTheme'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 type RowKind = 'auction' | 'system'
 
@@ -31,32 +31,25 @@ function formatDate(iso: string): string {
 }
 
 interface NotificationRowProps {
-  id: number
   title: string
   body: string
   date: string
   kind: RowKind
   isRead: boolean
-  onMarkRead: (id: number) => void
 }
 
-function NotificationRow({ id, title, body, date, kind, isRead, onMarkRead }: NotificationRowProps) {
+function NotificationRow({ title, body, date, kind, isRead }: NotificationRowProps) {
   const theme = useTheme()
   const iconName = kind === 'auction' ? 'home-outline' : 'information-circle-outline'
   const isSystem = kind === 'system'
 
-  const handlePress = () => {
-    if (!isRead) onMarkRead(id)
-  }
-
   return (
-    <Pressable
+    <View
       style={[
         styles.notifItem,
         { backgroundColor: theme.bg.surface },
         isRead ? styles.notifItemRead : null,
       ]}
-      onPress={handlePress}
     >
       <View style={[
         styles.notifIcon,
@@ -89,7 +82,7 @@ function NotificationRow({ id, title, body, date, kind, isRead, onMarkRead }: No
         </Text>
         <Text style={[styles.notifDate, { color: theme.text.tertiary }]}>{date}</Text>
       </View>
-    </Pressable>
+    </View>
   )
 }
 
@@ -98,20 +91,16 @@ function NotifSeparator() {
   return <View style={[styles.separator, { backgroundColor: theme.border.default }]} />
 }
 
-function createNotifRenderItem(onMarkRead: (id: number) => void) {
-  const NotifRenderItem = ({ item }: { item: NotificationResponse }) => (
+function renderNotifItem({ item }: { item: NotificationResponse }) {
+  return (
     <NotificationRow
-      id={item.id}
       title={item.title}
       body={item.body}
       date={formatDate(item.createdAt)}
       kind={classifyType(item.type)}
       isRead={item.isRead}
-      onMarkRead={onMarkRead}
     />
   )
-  NotifRenderItem.displayName = 'NotifRenderItem'
-  return NotifRenderItem
 }
 
 export default function NotificationsScreen() {
@@ -130,26 +119,24 @@ export default function NotificationsScreen() {
   } = useNotifications()
 
   const items = data?.pages.flatMap((p) => p.items) ?? []
-  const unreadCount = items.filter((n) => !n.isRead).length
-
-  const invalidateNotifications = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all })
-  }
-
-  const markReadMutation = useMutation({
-    mutationFn: markNotificationRead,
-    onSuccess: invalidateNotifications,
-  })
+  const hasUnread = items.some((n) => !n.isRead)
 
   const markAllReadMutation = useMutation({
     mutationFn: markAllNotificationsRead,
-    onSuccess: invalidateNotifications,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all })
+    },
   })
 
-  const handleMarkRead = (id: number) => markReadMutation.mutate(id)
-  const renderNotifItem = createNotifRenderItem(handleMarkRead)
-
-  const handleMarkAllRead = () => markAllReadMutation.mutate()
+  // 페이지 진입 시 unread가 있으면 자동으로 전체 읽음 처리.
+  // - 마운트당 1회만 호출되도록 ref로 가드 (refetch / pagination에 의해 재실행되지 않게)
+  const autoMarkedRef = useRef(false)
+  useEffect(() => {
+    if (autoMarkedRef.current) return
+    if (isLoading || !hasUnread) return
+    autoMarkedRef.current = true
+    markAllReadMutation.mutate()
+  }, [isLoading, hasUnread, markAllReadMutation])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -177,7 +164,7 @@ export default function NotificationsScreen() {
 
   const renderEmptyState = () => {
     if (isLoading) {
-      return <ActivityIndicator size="large" color={theme.brand.primary} />
+      return <LoadingSpinner size="medium" />
     }
     if (isError) {
       return (
@@ -207,17 +194,7 @@ export default function NotificationsScreen() {
           <Ionicons name="arrow-back" size={24} color={theme.text.primary} />
         </Pressable>
         <Text style={[styles.navTitle, { color: theme.text.primary }]}>알림</Text>
-        {unreadCount > 0 ? (
-          <Pressable
-            onPress={handleMarkAllRead}
-            hitSlop={8}
-            disabled={markAllReadMutation.isPending}
-          >
-            <Text style={[styles.markAllText, { color: theme.brand.primary }]}>전체 읽음</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.navSpacer} />
-        )}
+        <View style={styles.navSpacer} />
       </View>
 
       {items.length === 0 ? (
@@ -265,11 +242,7 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.xl,
   },
   navSpacer: {
-    width: 60,
-  },
-  markAllText: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.semibold,
+    width: 24,
   },
   listContent: {
     paddingBottom: Spacing.section,

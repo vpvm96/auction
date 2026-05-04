@@ -53,12 +53,16 @@ export function fetchInstitutionAuctions(
   params: InstitutionAuctionListParams = {},
 ): Promise<PagedResponse<InstitutionAuctionItem>> {
   const qs = buildQueryString(params)
-  return apiClient<PagedResponse<InstitutionAuctionItem>>(`/institution-auctions/items${qs}`)
+  return apiClient<PagedResponse<InstitutionAuctionItem>>(
+    `/hammers/hammer-auctions/institution-auctions/items${qs}`,
+  )
 }
 
 /** GET /institution-auctions/items/{id} — 기관 공매 물건 상세 */
 export function fetchInstitutionAuctionDetail(
   id: number | string,
 ): Promise<InstitutionAuctionItem> {
-  return apiClient<InstitutionAuctionItem>(`/institution-auctions/items/${id}`)
+  return apiClient<InstitutionAuctionItem>(
+    `/hammers/hammer-auctions/institution-auctions/items/${id}`,
+  )
 }

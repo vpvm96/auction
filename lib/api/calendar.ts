@@ -39,5 +39,7 @@ export function fetchCalendarSchedules(
   params: CalendarScheduleParams = {},
 ): Promise<CalendarScheduleResponse> {
   const qs = buildQueryString(params)
-  return apiClient<CalendarScheduleResponse>(`/calendar/schedules${qs}`)
+  return apiClient<CalendarScheduleResponse>(
+    `/hammers/hammer-auctions/calendar/schedules${qs}`,
+  )
 }

@@ -3,13 +3,13 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -161,7 +161,7 @@ export default function QuizScreen() {
       {/* 로딩 상태 */}
       {(isLoading || phase === 'loading') && !isError ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={theme.brand.primary} />
+          <LoadingSpinner size="medium" />
           <Text style={[styles.loadingText, { color: theme.text.secondary }]}>
             퀴즈를 불러오고 있어요...
           </Text>

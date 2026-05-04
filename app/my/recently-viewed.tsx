@@ -1,4 +1,5 @@
 import { createAuctionRenderItem } from "@/components/auction/render-auction-item";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { FontFamily, FontSize, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
 import { toAuctionItem } from "@/lib/api/auctions";
@@ -9,7 +10,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import {
-    ActivityIndicator,
     Pressable,
     StyleSheet,
     Text,
@@ -71,7 +71,7 @@ export default function RecentlyViewedScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.brand.primary} />
+          <LoadingSpinner size="medium" />
         </View>
       ) : items.length > 0 ? (
         <FlashList

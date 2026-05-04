@@ -1,11 +1,14 @@
 import { InstitutionAuctionCard } from "@/components/auction/institution-auction-card";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
 import type { InstitutionAuctionItem } from "@/lib/api/institution-auction";
 import { useInstitutionAuctions } from "@/lib/queries/institution-auction";
+import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
 import { FlashList } from "@shopify/flash-list";
+import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -34,6 +37,19 @@ const FILTER_TABS: FilterTab[] = [
   { key: "car", label: "자동차", category: "자동차" },
   { key: "equipment", label: "중기", category: "중기" },
   { key: "other", label: "기타", category: "기타" },
+];
+
+type SortType = "latest" | "deadline" | "begin";
+
+interface SortOption {
+  type: SortType;
+  label: string;
+}
+
+const SORT_OPTIONS: SortOption[] = [
+  { type: "latest", label: "최신순" },
+  { type: "deadline", label: "마감순" },
+  { type: "begin", label: "시작순" },
 ];
 
 function getInstitutionItemType() {
@@ -67,12 +83,27 @@ export default function InstitutionScreen() {
     filterScrollRef.current.scrollTo({ x: scrollX, animated: true });
   }, [selectedKey]);
 
+  const [selectedSort, setSelectedSort] = useState<SortType>("latest");
+
   const activeTab = FILTER_TABS.find((t) => t.key === selectedKey);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, refetch } =
     useInstitutionAuctions({ category: activeTab?.category });
 
   const allItems = (data?.pages ?? []).flatMap((p) => p.items);
+  const totalCount = data?.pages?.[0]?.totalCount ?? 0;
+
+  // "latest"는 allItems 그대로 (배열 ref 유지). 정렬이 필요한 경우만 새 배열을 만든다.
+  const sorted =
+    selectedSort === "latest"
+      ? allItems
+      : selectedSort === "deadline"
+        ? [...allItems].sort((a, b) =>
+            a.pbctClsDtm.localeCompare(b.pbctClsDtm),
+          )
+        : [...allItems].sort((a, b) =>
+            b.pbctBegnDtm.localeCompare(a.pbctBegnDtm),
+          );
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -108,7 +139,23 @@ export default function InstitutionScreen() {
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
           기관 공매
         </Text>
-        <ThemeToggleButton />
+        <View style={styles.headerActions}>
+          <Pressable
+            accessible={true}
+            accessibilityLabel="검색"
+            accessibilityRole="button"
+            hitSlop={8}
+            style={styles.iconButton}
+            onPress={() => router.push("/search")}
+          >
+            <Ionicons
+              name="search-outline"
+              size={22}
+              color={theme.text.secondary}
+            />
+          </Pressable>
+          <ThemeToggleButton />
+        </View>
       </View>
 
       <ScrollView
@@ -162,13 +209,50 @@ export default function InstitutionScreen() {
 
       <View style={[styles.sortRow, { backgroundColor: theme.bg.base }]}>
         <Text style={[styles.resultCount, { color: theme.text.primary }]}>
-          {isLoading ? "-" : `${allItems.length}건`}
+          {isLoading ? "-" : `${totalCount.toLocaleString()}건`}
         </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.sortOptions}>
+            {SORT_OPTIONS.map((opt) => {
+              const isActive = selectedSort === opt.type;
+              return (
+                <Pressable
+                  key={opt.type}
+                  style={[
+                    styles.sortButton,
+                    {
+                      backgroundColor: isActive
+                        ? theme.brand.primaryLight
+                        : theme.border.default,
+                    },
+                  ]}
+                  onPress={() => setSelectedSort(opt.type)}
+                >
+                  <Text
+                    style={[
+                      styles.sortButtonText,
+                      {
+                        color: isActive
+                          ? theme.brand.primary
+                          : theme.text.secondary,
+                        fontFamily: isActive
+                          ? FontFamily.bold
+                          : FontFamily.medium,
+                      },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ScrollView>
       </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.brand.primary} />
+          <LoadingSpinner size="medium" />
         </View>
       ) : allItems.length === 0 ? (
         <View style={styles.loadingContainer}>
@@ -178,11 +262,12 @@ export default function InstitutionScreen() {
         </View>
       ) : (
         <FlashList
-          data={allItems}
+          data={sorted}
           renderItem={renderInstitutionItem}
           keyExtractor={(item) => String(item.id)}
           getItemType={getInstitutionItemType}
           drawDistance={800}
+          maintainVisibleContentPosition={{ disabled: true }}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           onEndReached={handleEndReached}
@@ -225,6 +310,14 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxl,
     fontFamily: FontFamily.bold,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  iconButton: {
+    padding: Spacing.xs,
+  },
   filterScroll: {
     maxHeight: 48,
   },
@@ -252,6 +345,18 @@ const styles = StyleSheet.create({
   resultCount: {
     fontSize: FontSize.md,
     fontFamily: FontFamily.bold,
+  },
+  sortOptions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  sortButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 5,
+    borderRadius: Radius.xl,
+  },
+  sortButtonText: {
+    fontSize: FontSize.sm,
   },
   loadingContainer: {
     flex: 1,

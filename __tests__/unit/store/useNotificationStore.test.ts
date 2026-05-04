@@ -9,9 +9,7 @@ describe("useNotificationStore", () => {
       readIds: new Set(),
       expoPushToken: null,
       settings: {
-        auctionAlerts: true,
-        priceAlerts: true,
-        systemAlerts: true,
+        isEnabled: true,
       },
     });
   });
@@ -42,15 +40,14 @@ describe("useNotificationStore", () => {
     expect(state.readIds.size).toBe(3);
   });
 
-  it("should allow toggling notification settings", () => {
-    const initialState = useNotificationStore.getState();
-    const initialValue = initialState.settings.auctionAlerts;
+  it("should allow toggling push notifications on/off", () => {
+    const { setEnabled } = useNotificationStore.getState();
 
-    const { toggleSetting } = useNotificationStore.getState();
-    toggleSetting("auctionAlerts");
+    setEnabled(false);
+    expect(useNotificationStore.getState().settings.isEnabled).toBe(false);
 
-    const updatedState = useNotificationStore.getState();
-    expect(updatedState.settings.auctionAlerts).toBe(!initialValue);
+    setEnabled(true);
+    expect(useNotificationStore.getState().settings.isEnabled).toBe(true);
   });
 
   it("should allow setting expo push token", () => {
@@ -62,10 +59,8 @@ describe("useNotificationStore", () => {
     expect(state.expoPushToken).toBe(token);
   });
 
-  it("should track notification settings (auctionAlerts, priceAlerts, systemAlerts)", () => {
+  it("should track a single isEnabled notification setting", () => {
     const state = useNotificationStore.getState();
-    expect(typeof state.settings.auctionAlerts).toBe("boolean");
-    expect(typeof state.settings.priceAlerts).toBe("boolean");
-    expect(typeof state.settings.systemAlerts).toBe("boolean");
+    expect(typeof state.settings.isEnabled).toBe("boolean");
   });
 });

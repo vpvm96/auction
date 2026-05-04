@@ -12,7 +12,6 @@ import { useInstitutionAuctionDetail } from "@/lib/queries/institution-auction";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface InfoRowProps {
   label: string;
@@ -55,7 +55,7 @@ export default function InstitutionDetailScreen() {
       <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]}>
         <NavBar title="기관 공매 상세" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.brand.primary} />
+          <LoadingSpinner size="medium" />
         </View>
       </SafeAreaView>
     );

@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { ToastProvider } from "@/components/ui/toast";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import "@/global.css";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -213,12 +214,14 @@ export default function RootLayout() {
         <StatusBar style={isDark ? "light" : "dark"} />
         {appIsReady && (
           <AuthProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="notifications" />
-              <Stack.Screen name="auth" />
-              <Stack.Screen name="quiz" />
-            </Stack>
+            <ToastProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="notifications" />
+                <Stack.Screen name="auth" />
+                <Stack.Screen name="quiz" />
+              </Stack>
+            </ToastProvider>
           </AuthProvider>
         )}
         {showSplashOverlay && Platform.OS !== "web" && (

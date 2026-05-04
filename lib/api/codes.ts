@@ -27,9 +27,11 @@ export function fetchCodes(
   params: CodeListParams = {},
 ): Promise<PagedResponse<CodeInfo>> {
   const qs = buildQueryString(params)
-  return apiClient<PagedResponse<CodeInfo>>(`/code-infos${qs}`)
+  return apiClient<PagedResponse<CodeInfo>>(
+    `/hammers/hammer-auctions/code-infos${qs}`,
+  )
 }
 
 export function fetchCodeDetail(id: number): Promise<CodeInfo> {
-  return apiClient<CodeInfo>(`/code-infos/${id}`)
+  return apiClient<CodeInfo>(`/hammers/hammer-auctions/code-infos/${id}`)
 }

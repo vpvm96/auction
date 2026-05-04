@@ -1,4 +1,5 @@
 import { createAuctionRenderItem } from "@/components/auction/render-auction-item";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
@@ -6,9 +7,10 @@ import { toAuctionItem } from "@/lib/api/auctions";
 import { type AuctionType } from "@/lib/mock-data";
 import { useAuctions } from "@/lib/queries/auctions";
 import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
+import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
 import { FlashList } from "@shopify/flash-list";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
@@ -145,7 +147,23 @@ export default function ListScreen() {
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
           공매물건
         </Text>
-        <ThemeToggleButton />
+        <View style={styles.headerActions}>
+          <Pressable
+            accessible={true}
+            accessibilityLabel="검색"
+            accessibilityRole="button"
+            hitSlop={8}
+            style={styles.iconButton}
+            onPress={() => router.push("/search")}
+          >
+            <Ionicons
+              name="search-outline"
+              size={22}
+              color={theme.text.secondary}
+            />
+          </Pressable>
+          <ThemeToggleButton />
+        </View>
       </View>
 
       <ScrollView
@@ -242,7 +260,7 @@ export default function ListScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.brand.primary} />
+          <LoadingSpinner size="medium" />
         </View>
       ) : (
         <FlashList
@@ -298,6 +316,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: FontSize.xxl,
     fontFamily: FontFamily.bold,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  iconButton: {
+    padding: Spacing.xs,
   },
   filterScroll: {
     maxHeight: 48,

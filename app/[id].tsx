@@ -26,7 +26,6 @@ import { Image, type ImageSource } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -34,6 +33,7 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const EMPTY_IMAGE = require("@/assets/images/empty/auction_empty_image.webp");
 
@@ -462,7 +462,7 @@ export default function DetailScreen() {
           <View style={styles.navPlaceholder} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.brand.primary} />
+          <LoadingSpinner size="medium" />
         </View>
       </SafeAreaView>
     );

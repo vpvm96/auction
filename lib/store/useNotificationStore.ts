@@ -3,9 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { zustandStorage } from '@/lib/store/storage'
 
 export interface NotificationSettings {
-  auctionAlerts: boolean
-  priceAlerts: boolean
-  systemAlerts: boolean
+  isEnabled: boolean
 }
 
 interface NotificationStore {
@@ -14,7 +12,7 @@ interface NotificationStore {
   expoPushToken: string | null
   markRead: (id: string) => void
   markAllRead: (allIds: string[]) => void
-  toggleSetting: (key: keyof NotificationSettings) => void
+  setEnabled: (enabled: boolean) => void
   setExpoPushToken: (token: string | null) => void
 }
 
@@ -24,9 +22,7 @@ export const useNotificationStore = create<NotificationStore>()(
       readIds: new Set(),
       expoPushToken: null,
       settings: {
-        auctionAlerts: true,
-        priceAlerts: true,
-        systemAlerts: true,
+        isEnabled: true,
       },
       markRead: (id: string) =>
         set((state) => {
@@ -35,9 +31,9 @@ export const useNotificationStore = create<NotificationStore>()(
           return { readIds: next }
         }),
       markAllRead: (allIds: string[]) => set({ readIds: new Set(allIds) }),
-      toggleSetting: (key) =>
+      setEnabled: (enabled) =>
         set((state) => ({
-          settings: { ...state.settings, [key]: !state.settings[key] },
+          settings: { ...state.settings, isEnabled: enabled },
         })),
       setExpoPushToken: (token) => set({ expoPushToken: token }),
     }),

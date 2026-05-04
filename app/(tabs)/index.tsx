@@ -14,6 +14,7 @@ import { NewsBanner } from '@/components/home/news-banner'
 import { QuizBanner } from '@/components/home/quiz-banner'
 import { StatsCardSkeleton } from '@/components/ui/skeleton'
 import { dashboardSummaryToAuctionStats } from '@/lib/api/dashboard'
+import type { CalendarScheduleItem } from '@/lib/api/calendar'
 import type { AuctionStats } from '@/lib/mock-data'
 import { MOCK_STATS } from '@/lib/mock-data'
 import { useCalendarSchedules } from '@/lib/queries/calendar'
@@ -40,7 +41,7 @@ type Section =
   | { kind: 'stats-error'; onRetry: () => void }
   | { kind: 'stats'; stats: AuctionStats }
   | { kind: 'quiz' }
-  | { kind: 'date'; scheduleDateKeys: Set<string> | undefined }
+  | { kind: 'date'; schedules: Record<string, CalendarScheduleItem[]> | undefined }
   | { kind: 'categories' }
 
 function Header({ auctionStats }: { auctionStats: AuctionStats }) {
@@ -170,7 +171,7 @@ const renderSection = ({ item }: { item: Section }) => {
     case 'quiz':
       return <QuizBanner />
     case 'date':
-      return <DateSelector scheduleDateKeys={item.scheduleDateKeys} />
+      return <DateSelector schedules={item.schedules} />
     case 'categories':
       return <CategoryGrid />
   }
@@ -221,15 +222,7 @@ export default function HomeScreen() {
     statsSection = { kind: 'stats', stats: MOCK_STATS }
   }
 
-  const scheduleDateKeys = isLoggedIn
-    ? (() => {
-        const cal = calendarQuery.data
-        if (cal == null) return new Set<string>()
-        return new Set(
-          Object.keys(cal.schedules).filter((k) => (cal.schedules[k]?.length ?? 0) > 0),
-        )
-      })()
-    : undefined
+  const schedules = isLoggedIn ? (calendarQuery.data?.schedules ?? {}) : undefined
 
   const headerStats: AuctionStats =
     statsSection.kind === 'stats' ? statsSection.stats : MOCK_STATS
@@ -238,7 +231,7 @@ export default function HomeScreen() {
     { kind: 'news' },
     statsSection,
     { kind: 'quiz' },
-    { kind: 'date', scheduleDateKeys },
+    { kind: 'date', schedules },
     { kind: 'categories' },
   ]
 

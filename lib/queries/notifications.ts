@@ -1,9 +1,12 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchNotifications,
   fetchNotificationSettings,
   fetchUnreadNotificationCount,
+  updateNotificationSettings,
   type NotificationListParams,
+  type NotificationSettingsResponse,
+  type UpdateNotificationSettingsRequest,
 } from '@/lib/api/notifications'
 import { useAuthGuard } from './useAuthGuard'
 import { queryKeys } from './keys'
@@ -38,5 +41,31 @@ export function useNotificationSettings(options?: { enabled?: boolean }) {
     queryKey: queryKeys.notifications.settings(),
     queryFn: fetchNotificationSettings,
     enabled: useAuthGuard(options?.enabled),
+  })
+}
+
+export function useUpdateNotificationSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateNotificationSettingsRequest) => updateNotificationSettings(body),
+    onMutate: async (body) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.settings() })
+      const previous = queryClient.getQueryData<NotificationSettingsResponse>(
+        queryKeys.notifications.settings(),
+      )
+      queryClient.setQueryData<NotificationSettingsResponse>(
+        queryKeys.notifications.settings(),
+        { isEnabled: body.isEnabled },
+      )
+      return { previous }
+    },
+    onError: (_err, _body, ctx) => {
+      if (ctx?.previous != null) {
+        queryClient.setQueryData(queryKeys.notifications.settings(), ctx.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.settings() })
+    },
   })
 }
