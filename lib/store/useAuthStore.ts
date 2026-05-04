@@ -33,7 +33,12 @@ interface AuthStore {
   setHasHydrated: (value: boolean) => void
   login: (email: string, password: string) => Promise<void>
   oauthLogin: (provider: SocialProviderKey) => Promise<void>
-  signup: (name: string, email: string, password: string) => Promise<void>
+  signup: (
+    name: string,
+    email: string,
+    password: string,
+    agreeToTerms: boolean,
+  ) => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
   updateProfile: (name: string) => void
@@ -137,7 +142,12 @@ export const useAuthStore = create<AuthStore>()(
           }
         },
 
-        signup: async (name: string, email: string, password: string) => {
+        signup: async (
+          name: string,
+          email: string,
+          password: string,
+          agreeToTerms: boolean,
+        ) => {
           if (name.trim().length === 0) {
             set({ error: '이름을 입력해주세요.' })
             return
@@ -150,6 +160,10 @@ export const useAuthStore = create<AuthStore>()(
             set({ error: '비밀번호는 6자 이상이어야 합니다.' })
             return
           }
+          if (!agreeToTerms) {
+            set({ error: '이용 약관에 동의해주세요.' })
+            return
+          }
 
           set({ isLoading: true, error: null })
 
@@ -158,6 +172,7 @@ export const useAuthStore = create<AuthStore>()(
               email,
               nickname: name.trim(),
               password,
+              agreeToTerms,
             })
 
             const loginRes = await authApi.login({ email, password })

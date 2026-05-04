@@ -126,19 +126,29 @@ describe("useAuthStore.signup", () => {
   });
 
   it("rejects empty name", async () => {
-    await useAuthStore.getState().signup("   ", "u@test.com", "password");
+    await useAuthStore
+      .getState()
+      .signup("   ", "u@test.com", "password", true);
     expect(useAuthStore.getState().error).toMatch(/이름/);
     expect(mockedRegister).not.toHaveBeenCalled();
   });
 
   it("rejects invalid email", async () => {
-    await useAuthStore.getState().signup("Holder", "bad", "password");
+    await useAuthStore.getState().signup("Holder", "bad", "password", true);
     expect(useAuthStore.getState().error).toMatch(/이메일/);
   });
 
   it("rejects short password", async () => {
-    await useAuthStore.getState().signup("Holder", "u@test.com", "abc");
+    await useAuthStore.getState().signup("Holder", "u@test.com", "abc", true);
     expect(useAuthStore.getState().error).toMatch(/비밀번호/);
+  });
+
+  it("rejects when terms not agreed", async () => {
+    await useAuthStore
+      .getState()
+      .signup("Holder", "u@test.com", "password", false);
+    expect(useAuthStore.getState().error).toMatch(/약관/);
+    expect(mockedRegister).not.toHaveBeenCalled();
   });
 
   it("registers and logs in on success", async () => {
@@ -149,17 +159,24 @@ describe("useAuthStore.signup", () => {
     });
     mockedLogin.mockResolvedValueOnce({ accessToken: "tok" });
 
-    await useAuthStore.getState().signup("Holder", "u@test.com", "password");
+    await useAuthStore
+      .getState()
+      .signup("Holder", "u@test.com", "password", true);
 
     const state = useAuthStore.getState();
     expect(state.isLoggedIn).toBe(true);
     expect(state.user).toEqual({ id: "u1", name: "Holder", email: "u@test.com" });
+    expect(mockedRegister).toHaveBeenCalledWith(
+      expect.objectContaining({ agreeToTerms: true }),
+    );
   });
 
   it("maps 409 to duplicate email error", async () => {
     mockedRegister.mockRejectedValueOnce(new ApiError(409, "dup"));
 
-    await useAuthStore.getState().signup("Holder", "u@test.com", "password");
+    await useAuthStore
+      .getState()
+      .signup("Holder", "u@test.com", "password", true);
 
     expect(useAuthStore.getState().error).toMatch(/이미 가입/);
   });
@@ -167,7 +184,9 @@ describe("useAuthStore.signup", () => {
   it("maps non-409 ApiError to status error", async () => {
     mockedRegister.mockRejectedValueOnce(new ApiError(500, "boom"));
 
-    await useAuthStore.getState().signup("Holder", "u@test.com", "password");
+    await useAuthStore
+      .getState()
+      .signup("Holder", "u@test.com", "password", true);
 
     expect(useAuthStore.getState().error).toMatch(/500/);
   });
@@ -175,7 +194,9 @@ describe("useAuthStore.signup", () => {
   it("maps unknown error to network error", async () => {
     mockedRegister.mockRejectedValueOnce(new Error("oops"));
 
-    await useAuthStore.getState().signup("Holder", "u@test.com", "password");
+    await useAuthStore
+      .getState()
+      .signup("Holder", "u@test.com", "password", true);
 
     expect(useAuthStore.getState().error).toMatch(/네트워크/);
   });

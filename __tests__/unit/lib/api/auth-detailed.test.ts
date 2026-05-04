@@ -85,6 +85,7 @@ describe("Auth API detailed", () => {
         email: "new@example.com",
         nickname: "newuser",
         password: "pass123",
+        agreeToTerms: true,
       });
 
       expect(mockedApiClient).toHaveBeenCalledWith(
@@ -95,6 +96,7 @@ describe("Auth API detailed", () => {
             email: "new@example.com",
             nickname: "newuser",
             password: "pass123",
+            agreeToTerms: true,
           }),
           skipAuth: true,
         }),
@@ -113,6 +115,7 @@ describe("Auth API detailed", () => {
         email: "new@example.com",
         nickname: "newuser",
         password: "pass123",
+        agreeToTerms: true,
       });
 
       expect(result).toEqual(mockResponse);

@@ -24,15 +24,33 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
-const STEP_CONFIG = [
+const TERMS_STEP = 0;
+
+const TERMS_CONFIG = {
+  title: "이용 약관에\n동의해주세요",
+  subtitle: "서비스 이용을 위해 약관 동의가 필요해요",
+};
+
+interface InputStepConfig {
+  title: string;
+  subtitle: string;
+  placeholder: string;
+  keyboardType: "default" | "email-address";
+  autoCapitalize: "words" | "none";
+  secureTextEntry: boolean;
+  hasEye: boolean;
+}
+
+// 입력 스텝 설정 (TERMS_STEP 이후의 스텝, step 1~4에 매핑)
+const INPUT_STEP_CONFIG: InputStepConfig[] = [
   {
     title: "반가워요!\n이름이 무엇인가요?",
     subtitle: "HB Auction에서 사용할 이름을 알려주세요",
     placeholder: "홍길동",
-    keyboardType: "default" as const,
-    autoCapitalize: "words" as const,
+    keyboardType: "default",
+    autoCapitalize: "words",
     secureTextEntry: false,
     hasEye: false,
   },
@@ -40,8 +58,8 @@ const STEP_CONFIG = [
     title: "이메일을\n입력해주세요",
     subtitle: "로그인에 사용할 이메일이에요",
     placeholder: "example@email.com",
-    keyboardType: "email-address" as const,
-    autoCapitalize: "none" as const,
+    keyboardType: "email-address",
+    autoCapitalize: "none",
     secureTextEntry: false,
     hasEye: false,
   },
@@ -49,8 +67,8 @@ const STEP_CONFIG = [
     title: "비밀번호를\n설정해주세요",
     subtitle: "영문, 숫자 포함 6자 이상",
     placeholder: "비밀번호 입력",
-    keyboardType: "default" as const,
-    autoCapitalize: "none" as const,
+    keyboardType: "default",
+    autoCapitalize: "none",
     secureTextEntry: true,
     hasEye: true,
   },
@@ -58,8 +76,8 @@ const STEP_CONFIG = [
     title: "비밀번호를\n한 번 더 확인할게요",
     subtitle: "동일한 비밀번호를 입력해주세요",
     placeholder: "비밀번호 재입력",
-    keyboardType: "default" as const,
-    autoCapitalize: "none" as const,
+    keyboardType: "default",
+    autoCapitalize: "none",
     secureTextEntry: true,
     hasEye: true,
   },
@@ -73,10 +91,13 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const inputRef = useRef<TextInput>(null);
+  const agreeAll = agreeTerms && agreePrivacy;
 
   const signup = useAuthStore((s) => s.signup);
   const isLoading = useAuthStore((s) => s.isLoading);
@@ -86,8 +107,9 @@ export default function SignupScreen() {
 
   const progress = useSharedValue(0);
 
-  const values = [name, email, password, confirmPassword];
-  const setters = [setName, setEmail, setPassword, setConfirmPassword];
+  // 입력 스텝 (step 1~4)에서 사용. 약관 스텝(0)에서는 참조하지 않음.
+  const inputValues = [name, email, password, confirmPassword];
+  const inputSetters = [setName, setEmail, setPassword, setConfirmPassword];
 
   useEffect(() => {
     clearError();
@@ -107,6 +129,7 @@ export default function SignupScreen() {
   }, [step]);
 
   useEffect(() => {
+    if (step === TERMS_STEP) return;
     const timer = setTimeout(() => {
       inputRef.current?.focus();
     }, 350);
@@ -123,24 +146,30 @@ export default function SignupScreen() {
 
     switch (step) {
       case 0:
+        if (!agreeAll) {
+          setLocalError("필수 약관에 모두 동의해주세요.");
+          return;
+        }
+        break;
+      case 1:
         if (name.trim().length === 0) {
           setLocalError("이름을 입력해주세요.");
           return;
         }
         break;
-      case 1:
+      case 2:
         if (!EMAIL_REGEX.test(email)) {
           setLocalError("올바른 이메일 형식을 입력해주세요.");
           return;
         }
         break;
-      case 2:
+      case 3:
         if (password.length < 6) {
           setLocalError("비밀번호는 6자 이상이어야 합니다.");
           return;
         }
         break;
-      case 3:
+      case 4:
         if (password !== confirmPassword) {
           setLocalError("비밀번호가 일치하지 않습니다.");
           return;
@@ -164,16 +193,23 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     setLocalError(null);
     clearError();
-    await signup(name.trim(), email, password);
+    await signup(name.trim(), email, password, agreeAll);
   };
 
   const displayError = localError ?? storeError;
-  const current = STEP_CONFIG[step];
-  const currentValue = values[step];
-  const currentSetter = setters[step];
+  const isTermsStep = step === TERMS_STEP;
+  const inputIndex = step - 1;
+  const inputConfig = isTermsStep ? null : INPUT_STEP_CONFIG[inputIndex];
+  const currentValue = isTermsStep ? "" : inputValues[inputIndex];
+  const currentSetter = isTermsStep ? null : inputSetters[inputIndex];
   const isLastStep = step === TOTAL_STEPS - 1;
-  const hasValue = currentValue.trim().length > 0;
-  const isSecure = current.secureTextEntry && !showPassword;
+  const hasValue = isTermsStep ? agreeAll : currentValue.trim().length > 0;
+  const isSecure =
+    inputConfig != null && inputConfig.secureTextEntry && !showPassword;
+  const headerTitle = isTermsStep ? TERMS_CONFIG.title : inputConfig!.title;
+  const headerSubtitle = isTermsStep
+    ? TERMS_CONFIG.subtitle
+    : inputConfig!.subtitle;
 
   return (
     <SafeAreaView
@@ -221,54 +257,177 @@ export default function SignupScreen() {
             style={styles.stepContent}
           >
             <Text style={[styles.stepTitle, { color: theme.text.primary }]}>
-              {current.title}
+              {headerTitle}
             </Text>
             <Text
               style={[styles.stepSubtitle, { color: theme.text.secondary }]}
             >
-              {current.subtitle}
+              {headerSubtitle}
             </Text>
 
-            <View
-              style={[
-                styles.inputContainer,
-                { borderBottomColor: theme.border.default },
-              ]}
-            >
-              <TextInput
-                ref={inputRef}
-                style={[styles.input, { color: theme.text.primary }]}
-                value={currentValue}
-                onChangeText={(text) => {
-                  setLocalError(null);
-                  currentSetter(text);
-                }}
-                placeholder={current.placeholder}
-                placeholderTextColor={theme.text.tertiary}
-                keyboardType={current.keyboardType}
-                autoCapitalize={current.autoCapitalize}
-                secureTextEntry={isSecure}
-                returnKeyType={isLastStep ? "done" : "next"}
-                onSubmitEditing={validateAndNext}
-                autoCorrect={false}
-                selectionColor={theme.brand.primary}
-                underlineColorAndroid="transparent"
-              />
-
-              {current.hasEye ? (
+            {isTermsStep ? (
+              <View style={styles.agreementGroup}>
                 <Pressable
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword((prev) => !prev)}
-                  hitSlop={12}
+                  style={[
+                    styles.agreementAllRow,
+                    { borderColor: theme.border.default },
+                  ]}
+                  onPress={() => {
+                    setLocalError(null);
+                    const next = !agreeAll;
+                    setAgreeTerms(next);
+                    setAgreePrivacy(next);
+                  }}
                 >
                   <Ionicons
-                    name={showPassword ? "eye-outline" : "eye-off-outline"}
-                    size={22}
-                    color={theme.text.tertiary}
+                    name={agreeAll ? "checkmark-circle" : "ellipse-outline"}
+                    size={26}
+                    color={
+                      agreeAll ? theme.brand.primary : theme.text.tertiary
+                    }
                   />
+                  <Text
+                    style={[
+                      styles.agreementAllText,
+                      { color: theme.text.primary },
+                    ]}
+                  >
+                    전체 동의
+                  </Text>
                 </Pressable>
-              ) : null}
-            </View>
+
+                <Pressable
+                  style={styles.agreementItemRow}
+                  onPress={() => {
+                    setLocalError(null);
+                    setAgreeTerms((prev) => !prev);
+                  }}
+                >
+                  <Ionicons
+                    name={
+                      agreeTerms ? "checkmark-circle" : "ellipse-outline"
+                    }
+                    size={22}
+                    color={
+                      agreeTerms ? theme.brand.primary : theme.text.tertiary
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.agreementItemText,
+                      { color: theme.text.primary },
+                    ]}
+                  >
+                    [필수] 이용약관 동의
+                  </Text>
+                  <Pressable
+                    hitSlop={12}
+                    onPress={() => router.push("/my/terms")}
+                    style={styles.agreementViewButton}
+                  >
+                    <Text
+                      style={[
+                        styles.agreementViewText,
+                        { color: theme.text.tertiary },
+                      ]}
+                    >
+                      보기
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={theme.text.tertiary}
+                    />
+                  </Pressable>
+                </Pressable>
+
+                <Pressable
+                  style={styles.agreementItemRow}
+                  onPress={() => {
+                    setLocalError(null);
+                    setAgreePrivacy((prev) => !prev);
+                  }}
+                >
+                  <Ionicons
+                    name={
+                      agreePrivacy ? "checkmark-circle" : "ellipse-outline"
+                    }
+                    size={22}
+                    color={
+                      agreePrivacy ? theme.brand.primary : theme.text.tertiary
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.agreementItemText,
+                      { color: theme.text.primary },
+                    ]}
+                  >
+                    [필수] 개인정보처리방침 동의
+                  </Text>
+                  <Pressable
+                    hitSlop={12}
+                    onPress={() => router.push("/my/privacy")}
+                    style={styles.agreementViewButton}
+                  >
+                    <Text
+                      style={[
+                        styles.agreementViewText,
+                        { color: theme.text.tertiary },
+                      ]}
+                    >
+                      보기
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={theme.text.tertiary}
+                    />
+                  </Pressable>
+                </Pressable>
+              </View>
+            ) : (
+              <View
+                style={[
+                  styles.inputContainer,
+                  { borderBottomColor: theme.border.default },
+                ]}
+              >
+                <TextInput
+                  ref={inputRef}
+                  style={[styles.input, { color: theme.text.primary }]}
+                  value={currentValue}
+                  onChangeText={(text) => {
+                    setLocalError(null);
+                    currentSetter?.(text);
+                  }}
+                  placeholder={inputConfig!.placeholder}
+                  placeholderTextColor={theme.text.tertiary}
+                  keyboardType={inputConfig!.keyboardType}
+                  autoCapitalize={inputConfig!.autoCapitalize}
+                  secureTextEntry={isSecure}
+                  returnKeyType={isLastStep ? "done" : "next"}
+                  onSubmitEditing={validateAndNext}
+                  autoCorrect={false}
+                  selectionColor={theme.brand.primary}
+                  underlineColorAndroid="transparent"
+                />
+
+                {inputConfig!.hasEye ? (
+                  <Pressable
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword((prev) => !prev)}
+                    hitSlop={12}
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye-outline" : "eye-off-outline"}
+                      size={22}
+                      color={theme.text.tertiary}
+                    />
+                  </Pressable>
+                ) : null}
+              </View>
+            )}
 
             {displayError != null ? (
               <Animated.View
@@ -291,7 +450,7 @@ export default function SignupScreen() {
         </View>
 
         <View style={styles.bottomArea}>
-          {step === 0 ? (
+          {isTermsStep ? (
             <View style={styles.loginRow}>
               <Text style={[styles.loginText, { color: theme.text.secondary }]}>
                 이미 계정이 있으신가요?{" "}
@@ -395,6 +554,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 2,
     paddingBottom: Spacing.xl,
+  },
+  agreementGroup: {
+    gap: Spacing.xl,
+  },
+  agreementAllRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+  },
+  agreementAllText: {
+    fontSize: FontSize.lg,
+    fontFamily: FontFamily.bold,
+  },
+  agreementItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xl,
+    paddingHorizontal: Spacing.xl,
+  },
+  agreementItemText: {
+    flex: 1,
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.regular,
+  },
+  agreementViewButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xxs,
+  },
+  agreementViewText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.regular,
   },
   input: {
     flex: 1,

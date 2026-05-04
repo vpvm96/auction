@@ -23,18 +23,19 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface InfoRowProps {
   label: string;
-  value: string;
+  value: string | null | undefined;
 }
 
 function InfoRow({ label, value }: InfoRowProps) {
   const theme = useTheme();
+  const display = value != null && value !== "" ? value : "-";
   return (
     <View style={styles.infoRow}>
       <Text style={[styles.infoLabel, { color: theme.text.secondary }]}>
         {label}
       </Text>
       <Text style={[styles.infoValue, { color: theme.text.primary }]}>
-        {value}
+        {display}
       </Text>
     </View>
   );
@@ -121,7 +122,6 @@ export default function InstitutionDetailScreen() {
             공고 정보
           </Text>
           <InfoRow label="공고기관" value={item.orgNm} />
-          <InfoRow label="공고번호" value={item.orgPlnmNo} />
           <InfoRow label="관리번호" value={item.plnmMnmtNo} />
           <InfoRow label="공고일" value={formatFullDate(item.plnmDt)} />
           <InfoRow label="공고종류" value={item.plnmKindNm} />

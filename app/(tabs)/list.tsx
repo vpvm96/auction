@@ -1,5 +1,5 @@
 import { createAuctionRenderItem } from "@/components/auction/render-auction-item";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { AuctionListSkeleton } from "@/components/ui/skeleton";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
@@ -259,9 +259,7 @@ export default function ListScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <LoadingSpinner size="medium" />
-        </View>
+        <AuctionListSkeleton count={6} />
       ) : (
         <FlashList
           data={sorted}

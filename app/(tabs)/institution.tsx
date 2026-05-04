@@ -1,5 +1,5 @@
 import { InstitutionAuctionCard } from "@/components/auction/institution-auction-card";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { AuctionListSkeleton } from "@/components/ui/skeleton";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
@@ -251,9 +251,7 @@ export default function InstitutionScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <LoadingSpinner size="medium" />
-        </View>
+        <AuctionListSkeleton count={6} />
       ) : allItems.length === 0 ? (
         <View style={styles.loadingContainer}>
           <Text style={[styles.emptyText, { color: theme.text.tertiary }]}>
