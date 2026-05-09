@@ -104,6 +104,16 @@ export function AuctionListSkeleton({ count = 5 }: { count?: number }) {
   )
 }
 
+export function AuctionListFooterSkeleton({ count = 2 }: { count?: number }) {
+  return (
+    <View style={skeletonStyles.footer}>
+      {Array.from({ length: count }, (_, i) => (
+        <AuctionCardSkeleton key={i} />
+      ))}
+    </View>
+  )
+}
+
 export function StatsCardSkeleton() {
   const theme = useTheme()
   return (
@@ -174,6 +184,9 @@ const skeletonStyles = StyleSheet.create({
   },
   list: {
     paddingTop: Spacing.lg,
+  },
+  footer: {
+    paddingTop: 0,
   },
   statsCard: {
     borderRadius: Radius.xl,

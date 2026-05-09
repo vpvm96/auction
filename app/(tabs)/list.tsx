@@ -1,5 +1,8 @@
 import { createAuctionRenderItem } from "@/components/auction/render-auction-item";
-import { AuctionListSkeleton } from "@/components/ui/skeleton";
+import {
+  AuctionListFooterSkeleton,
+  AuctionListSkeleton,
+} from "@/components/ui/skeleton";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
@@ -13,7 +16,6 @@ import { FlashList } from "@shopify/flash-list";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
     Pressable,
     RefreshControl,
     ScrollView,
@@ -286,12 +288,7 @@ export default function ListScreen() {
             />
           }
           ListFooterComponent={
-            isFetchingNextPage ? (
-              <ActivityIndicator
-                style={styles.footerLoader}
-                color={theme.brand.primary}
-              />
-            ) : null
+            isFetchingNextPage ? <AuctionListFooterSkeleton count={2} /> : null
           }
         />
       )}
@@ -371,8 +368,5 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.section,
-  },
-  footerLoader: {
-    paddingVertical: Spacing.xl,
   },
 });
