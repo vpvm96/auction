@@ -1,3 +1,4 @@
+import { AuctionImageCarousel } from "@/components/auction/auction-image-carousel";
 import { Badge } from "@/components/ui/badge";
 import { Divider } from "@/components/ui/divider";
 import {
@@ -22,7 +23,6 @@ import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
 import { useRecentlyViewedStore } from "@/lib/store/useRecentlyViewedStore";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Image, type ImageSource } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -565,14 +565,9 @@ export default function DetailScreen() {
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Image
-          source={
-            auction.thumbnailUrl
-              ? ({ uri: auction.thumbnailUrl } as ImageSource)
-              : EMPTY_IMAGE
-          }
-          style={[styles.heroImage, { backgroundColor: theme.bg.sunken }]}
-          contentFit="cover"
+        <AuctionImageCarousel
+          imageUrls={auction.imageUrls}
+          fallback={EMPTY_IMAGE}
         />
 
         <View style={[styles.section, { backgroundColor: theme.bg.surface }]}>
@@ -773,10 +768,6 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
-  },
-  heroImage: {
-    width: "100%",
-    height: 240,
   },
   section: {
     padding: Spacing.xxl,

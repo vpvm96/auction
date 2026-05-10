@@ -1,4 +1,5 @@
 import type { AuctionItem, AuctionType } from "@/lib/mock-data";
+import { fixOnbidImageUrl } from "@/lib/onbid";
 import { apiClient, buildQueryString } from "./client";
 
 // ─── Response Types ──────────────────────────────────────────────────────────
@@ -140,7 +141,10 @@ export function toAuctionItem(item: KamcoAuctionItem): AuctionItem {
       ? Math.round((item.minBidPrc / item.apslAsesAvgAmt) * 100)
       : 0;
 
-  const images = item.cltrImgFiles ?? [];
+  // 온비드 Open API가 아직 구 URL을 반환하므로 클라이언트에서 신 URL로 보정한다.
+  const images = (item.cltrImgFiles ?? [])
+    .map(fixOnbidImageUrl)
+    .filter((u): u is string => u != null && u.length > 0);
 
   const marketGapRate =
     item.investmentAnalysis?.marketGap?.gapRate ?? undefined;
