@@ -42,7 +42,7 @@ describe("Codes API detailed", () => {
 
       await fetchCodes();
 
-      expect(mockedApiClient).toHaveBeenCalledWith("/code-infos");
+      expect(mockedApiClient).toHaveBeenCalledWith("/hammers/hammer-auctions/code-infos");
     });
 
     it("should pass query params via buildQueryString", async () => {
@@ -58,7 +58,9 @@ describe("Codes API detailed", () => {
       await fetchCodes({ page: 2, size: 10 });
 
       expect(mockedBuildQueryString).toHaveBeenCalledWith({ page: 2, size: 10 });
-      expect(mockedApiClient).toHaveBeenCalledWith("/code-infos?page=2&size=10");
+      expect(mockedApiClient).toHaveBeenCalledWith(
+        "/hammers/hammer-auctions/code-infos?page=2&size=10",
+      );
     });
 
     it("should pass parentId param", async () => {
@@ -98,7 +100,9 @@ describe("Codes API detailed", () => {
 
       await fetchCodeDetail(1);
 
-      expect(mockedApiClient).toHaveBeenCalledWith("/code-infos/1");
+      expect(mockedApiClient).toHaveBeenCalledWith(
+        "/hammers/hammer-auctions/code-infos/1",
+      );
     });
 
     it("should return code info", async () => {

@@ -25,6 +25,8 @@ describe('Calendar API', () => {
     await fetchCalendarSchedules({ year: 2026, month: 4 })
 
     expect(mockedBuildQueryString).toHaveBeenCalledWith({ year: 2026, month: 4 })
-    expect(mockedApiClient).toHaveBeenCalledWith('/calendar/schedules?year=2026&month=4')
+    expect(mockedApiClient).toHaveBeenCalledWith(
+      '/hammers/hammer-auctions/calendar/schedules?year=2026&month=4',
+    )
   })
 })

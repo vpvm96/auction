@@ -66,7 +66,7 @@ describe("Institution Auctions API detailed", () => {
       await fetchInstitutionAuctions();
 
       expect(mockedApiClient).toHaveBeenCalledWith(
-        "/institution-auctions/items",
+        "/hammers/hammer-auctions/institution-auctions/items",
       );
     });
 
@@ -87,7 +87,7 @@ describe("Institution Auctions API detailed", () => {
         page: 1,
       });
       expect(mockedApiClient).toHaveBeenCalledWith(
-        "/institution-auctions/items?keyword=공고&page=1",
+        "/hammers/hammer-auctions/institution-auctions/items?keyword=공고&page=1",
       );
     });
 
@@ -132,7 +132,7 @@ describe("Institution Auctions API detailed", () => {
       await fetchInstitutionAuctionDetail(1);
 
       expect(mockedApiClient).toHaveBeenCalledWith(
-        "/institution-auctions/items/1",
+        "/hammers/hammer-auctions/institution-auctions/items/1",
       );
     });
 

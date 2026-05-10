@@ -3,10 +3,12 @@ import { useTheme } from "@/hooks/useTheme";
 import { Galeria } from "@nandorojo/galeria";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { Image, type ImageSource } from "expo-image";
-import { useRef, useState } from "react";
+import { type ReactElement, type ReactNode, useRef, useState } from "react";
 import {
+  Platform,
   StyleSheet,
   Text,
+  UIManager,
   View,
   useWindowDimensions,
   type LayoutChangeEvent,
@@ -42,6 +44,40 @@ function CarouselImage({ uri, width, backgroundColor }: CarouselImageProps) {
 
 function getImageItemType() {
   return "carousel-image";
+}
+
+// Galeria는 iOS/Android에서 네이티브 ViewManager(QuickLook 등)를 사용한다.
+// 다음과 같은 환경에서는 네이티브 코드가 바이너리에 없어 런타임에
+// "Unimplemented component: <ViewManagerAdapter_Galeria_...>" 가 화면에 찍힌다:
+//   1) Expo Go (네이티브 모듈 미포함)
+//   2) Galeria 설치 이전에 만들어진 dev build / TestFlight / 스토어 빌드
+//   3) prebuild 미실행으로 ios/ pods에 Galeria가 누락된 빌드
+//
+// IS_EXPO_GO 같은 환경 플래그로는 (2)/(3)을 못 잡으므로, 실제로 네이티브
+// ViewManager가 등록되었는지 직접 검사한다. 웹은 JS 모달이라 항상 사용 가능.
+const HAS_NATIVE_LIGHTBOX =
+  Platform.OS === "web"
+    ? true
+    : (UIManager.hasViewManagerConfig?.("Galeria") ?? false);
+
+interface LightboxRootProps {
+  urls: string[];
+  children: ReactNode;
+}
+
+function LightboxRoot({ urls, children }: LightboxRootProps) {
+  if (!HAS_NATIVE_LIGHTBOX) return <>{children}</>;
+  return <Galeria urls={urls}>{children}</Galeria>;
+}
+
+interface LightboxImageProps {
+  index: number;
+  children: ReactElement;
+}
+
+function LightboxImage({ index, children }: LightboxImageProps) {
+  if (!HAS_NATIVE_LIGHTBOX) return children;
+  return <Galeria.Image index={index}>{children}</Galeria.Image>;
 }
 
 /**
@@ -92,15 +128,15 @@ export function AuctionImageCarousel({
 
   if (imageUrls.length === 1) {
     return (
-      <Galeria urls={imageUrls}>
-        <Galeria.Image index={0}>
+      <LightboxRoot urls={imageUrls}>
+        <LightboxImage index={0}>
           <Image
             source={{ uri: imageUrls[0] } as ImageSource}
             style={[styles.hero, { backgroundColor: theme.bg.sunken }]}
             contentFit="cover"
           />
-        </Galeria.Image>
-      </Galeria>
+        </LightboxImage>
+      </LightboxRoot>
     );
   }
 
@@ -135,17 +171,17 @@ export function AuctionImageCarousel({
   };
 
   const renderItem = ({ item, index }: { item: string; index: number }) => (
-    <Galeria.Image index={index}>
+    <LightboxImage index={index}>
       <CarouselImage
         uri={item}
         width={itemWidth}
         backgroundColor={theme.bg.sunken}
       />
-    </Galeria.Image>
+    </LightboxImage>
   );
 
   return (
-    <Galeria urls={imageUrls}>
+    <LightboxRoot urls={imageUrls}>
       <View
         style={[styles.hero, { backgroundColor: theme.bg.sunken }]}
         onLayout={handleLayout}
@@ -201,7 +237,7 @@ export function AuctionImageCarousel({
           })}
         </View>
       </View>
-    </Galeria>
+    </LightboxRoot>
   );
 }
 
