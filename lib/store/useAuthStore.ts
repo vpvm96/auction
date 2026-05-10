@@ -93,7 +93,9 @@ export const useAuthStore = create<AuthStore>()(
               err instanceof ApiError
                 ? err.status === 401
                   ? '이메일 또는 비밀번호가 올바르지 않습니다.'
-                  : `로그인에 실패했습니다. (${err.status})`
+                  : err.status === 403
+                    ? '계정이 정지되어 로그인할 수 없습니다. 관리자에게 문의해 주세요.'
+                    : `로그인에 실패했습니다. (${err.status})`
                 : '네트워크 오류가 발생했습니다.'
 
             set({ isLoading: false, error: message })
@@ -134,9 +136,11 @@ export const useAuthStore = create<AuthStore>()(
               message = err.message
             } else if (err instanceof ApiError) {
               message =
-                err.status === 409
-                  ? '이미 다른 방식으로 가입된 계정입니다.'
-                  : `소셜 로그인에 실패했습니다. (${err.status})`
+                err.status === 403
+                  ? '계정이 정지되어 로그인할 수 없습니다. 관리자에게 문의해 주세요.'
+                  : err.status === 409
+                    ? '이미 다른 방식으로 가입된 계정입니다.'
+                    : `소셜 로그인에 실패했습니다. (${err.status})`
             }
             set({ isLoading: false, error: message })
           }
