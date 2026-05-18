@@ -1,4 +1,5 @@
 import { AuctionImageCarousel } from "@/components/auction/auction-image-carousel";
+import { KakaoMap } from "@/components/map/kakao-map";
 import { Badge } from "@/components/ui/badge";
 import { Divider } from "@/components/ui/divider";
 import {
@@ -581,6 +582,19 @@ export default function DetailScreen() {
           <InfoRow label="분류" value={rawItem?.ctgrFullNm ?? "-"} />
           <InfoRow label="상태" value={rawItem?.pbctCltrStatNm ?? "-"} />
           <InfoRow label="조회수" value={`${rawItem?.iqryCnt ?? 0}회`} />
+        </View>
+
+        <Divider variant="section" />
+
+        <View style={[styles.section, { backgroundColor: theme.bg.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>
+            지도
+          </Text>
+          <KakaoMap
+            query={auction.title}
+            fallbackQuery={auction.address}
+            height={240}
+          />
         </View>
 
         <Divider variant="section" />

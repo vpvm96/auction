@@ -2,13 +2,22 @@ import { Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
 import { Galeria } from "@nandorojo/galeria";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
+import { requireOptionalNativeModule } from "expo-modules-core";
 import { Image, type ImageSource } from "expo-image";
-import { type ReactElement, type ReactNode, useRef, useState } from "react";
 import {
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  Modal,
   Platform,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  UIManager,
   View,
   useWindowDimensions,
   type LayoutChangeEvent,
@@ -53,12 +62,17 @@ function getImageItemType() {
 //   2) Galeria 설치 이전에 만들어진 dev build / TestFlight / 스토어 빌드
 //   3) prebuild 미실행으로 ios/ pods에 Galeria가 누락된 빌드
 //
-// IS_EXPO_GO 같은 환경 플래그로는 (2)/(3)을 못 잡으므로, 실제로 네이티브
-// ViewManager가 등록되었는지 직접 검사한다. 웹은 JS 모달이라 항상 사용 가능.
+// Galeria v3는 Expo Modules(`requireNativeView`)로 등록되는 Fabric 뷰라
+// 레거시 `UIManager.hasViewManagerConfig`로는 New Architecture(RN 0.81/Expo 54
+// 기본값) 빌드에서 정상 링크돼 있어도 false가 반환되어 TestFlight에서
+// 라이트박스가 비활성화되는 버그가 있었다. Expo Modules 레지스트리를 직접
+// 조회하는 `requireOptionalNativeModule`로 검사한다 (네이티브 측 `Name("Galeria")`).
+//
+// 웹은 Galeria가 단일 이미지 팝업만 지원하고 스와이프가 없으므로
+// 아래 WebLightbox로 대체한다.
+const IS_WEB = Platform.OS === "web";
 const HAS_NATIVE_LIGHTBOX =
-  Platform.OS === "web"
-    ? true
-    : (UIManager.hasViewManagerConfig?.("Galeria") ?? false);
+  !IS_WEB && requireOptionalNativeModule("Galeria") != null;
 
 interface LightboxRootProps {
   urls: string[];
@@ -72,12 +86,105 @@ function LightboxRoot({ urls, children }: LightboxRootProps) {
 
 interface LightboxImageProps {
   index: number;
+  onWebPress?: () => void;
   children: ReactElement;
 }
 
-function LightboxImage({ index, children }: LightboxImageProps) {
+function LightboxImage({ index, onWebPress, children }: LightboxImageProps) {
+  if (IS_WEB) {
+    return <Pressable onPress={onWebPress}>{children}</Pressable>;
+  }
   if (!HAS_NATIVE_LIGHTBOX) return children;
   return <Galeria.Image index={index}>{children}</Galeria.Image>;
+}
+
+interface WebLightboxProps {
+  urls: string[];
+  initialIndex: number;
+  onClose: () => void;
+}
+
+// 웹 전용 라이트박스: ScrollView + pagingEnabled로 좌우 스와이프 페이징을 구현한다.
+function WebLightbox({ urls, initialIndex, onClose }: WebLightboxProps) {
+  const { width, height } = useWindowDimensions();
+  const scrollRef = useRef<ScrollView | null>(null);
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
+
+  // Modal 마운트 직후 초기 인덱스로 스크롤 위치를 맞춘다.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({
+        x: initialIndex * width,
+        y: 0,
+        animated: false,
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [initialIndex, width]);
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (width <= 0) return;
+    const next = Math.round(e.nativeEvent.contentOffset.x / width);
+    const clamped = Math.max(0, Math.min(urls.length - 1, next));
+    if (clamped !== activeIndex) setActiveIndex(clamped);
+  };
+
+  return (
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.lightboxOverlay}>
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          style={styles.lightboxScroll}
+        >
+          {urls.map((url, i) => (
+            <View
+              key={`${i}-${url}`}
+              style={{
+                width,
+                height,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Image
+                source={{ uri: url } as ImageSource}
+                style={{ width, height }}
+                contentFit="contain"
+                transition={150}
+              />
+            </View>
+          ))}
+        </ScrollView>
+
+        <Pressable
+          onPress={onClose}
+          style={styles.lightboxClose}
+          accessibilityRole="button"
+          accessibilityLabel="닫기"
+        >
+          <Text style={styles.lightboxCloseText}>×</Text>
+        </Pressable>
+
+        {urls.length > 1 ? (
+          <View style={styles.lightboxCounter} pointerEvents="none">
+            <Text style={styles.lightboxCounterText}>
+              {`${activeIndex + 1} / ${urls.length}`}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </Modal>
+  );
 }
 
 /**
@@ -106,6 +213,8 @@ export function AuctionImageCarousel({
   // 측정 전(0)에는 screenWidth로 fallback.
   const [containerWidth, setContainerWidth] = useState(0);
   const itemWidth = containerWidth > 0 ? containerWidth : screenWidth;
+  // 웹 전용 라이트박스 오픈 상태. 네이티브에서는 Galeria가 직접 처리한다.
+  const [webLightboxIndex, setWebLightboxIndex] = useState<number | null>(null);
 
   const listRef = useRef<FlashListRef<string> | null>(null);
 
@@ -115,6 +224,8 @@ export function AuctionImageCarousel({
       setContainerWidth(w);
     }
   };
+
+  const closeWebLightbox = () => setWebLightboxIndex(null);
 
   if (imageUrls.length === 0) {
     return (
@@ -129,13 +240,20 @@ export function AuctionImageCarousel({
   if (imageUrls.length === 1) {
     return (
       <LightboxRoot urls={imageUrls}>
-        <LightboxImage index={0}>
+        <LightboxImage index={0} onWebPress={() => setWebLightboxIndex(0)}>
           <Image
             source={{ uri: imageUrls[0] } as ImageSource}
             style={[styles.hero, { backgroundColor: theme.bg.sunken }]}
             contentFit="cover"
           />
         </LightboxImage>
+        {IS_WEB && webLightboxIndex !== null ? (
+          <WebLightbox
+            urls={imageUrls}
+            initialIndex={webLightboxIndex}
+            onClose={closeWebLightbox}
+          />
+        ) : null}
       </LightboxRoot>
     );
   }
@@ -171,7 +289,10 @@ export function AuctionImageCarousel({
   };
 
   const renderItem = ({ item, index }: { item: string; index: number }) => (
-    <LightboxImage index={index}>
+    <LightboxImage
+      index={index}
+      onWebPress={() => setWebLightboxIndex(index)}
+    >
       <CarouselImage
         uri={item}
         width={itemWidth}
@@ -237,6 +358,13 @@ export function AuctionImageCarousel({
           })}
         </View>
       </View>
+      {IS_WEB && webLightboxIndex !== null ? (
+        <WebLightbox
+          urls={imageUrls}
+          initialIndex={webLightboxIndex}
+          onClose={closeWebLightbox}
+        />
+      ) : null}
     </LightboxRoot>
   );
 }
@@ -275,5 +403,43 @@ const styles = StyleSheet.create({
   dot: {
     height: 6,
     borderRadius: 3,
+  },
+  lightboxOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.95)",
+  },
+  lightboxScroll: {
+    flex: 1,
+  },
+  lightboxClose: {
+    position: "absolute",
+    top: Spacing.md,
+    right: Spacing.md,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  lightboxCloseText: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    lineHeight: 28,
+    fontWeight: "300",
+  },
+  lightboxCounter: {
+    position: "absolute",
+    top: Spacing.md,
+    alignSelf: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radius.xxl,
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+  },
+  lightboxCounterText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
   },
 });

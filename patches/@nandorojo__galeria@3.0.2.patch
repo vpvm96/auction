@@ -1,0 +1,20 @@
+diff --git a/ios/ImageViewer.swift/ImageViewerRootView.swift b/ios/ImageViewer.swift/ImageViewerRootView.swift
+index a5ea53530e7a26bde1135cad29d327f91e0cb78c..ba18a7c9a5be3a09b89969e5a4d081979fb80d13 100644
+--- a/ios/ImageViewer.swift/ImageViewerRootView.swift
++++ b/ios/ImageViewer.swift/ImageViewerRootView.swift
+@@ -3,7 +3,14 @@ import UIKit
+ class ImageViewerRootView: UIView, RootViewType {
+     let transition = MatchTransition()
+ 
+-    weak var imageDatasource: ImageDataSource?
++    // Patched: was `weak`, which caused the source `TapWithDataRecognizer` to be
++    // the only strong owner of the datasource. `GaleriaView.setupImageView()`
++    // removes & recreates that recognizer on every prop update (Fabric view
++    // recycling). When the parent re-renders while the lightbox is open the
++    // datasource gets deallocated, `UIPageViewController` dataSource methods
++    // return nil, and swipe navigation between pages breaks. Holding it
++    // strongly here ties the lifetime to the viewer itself.
++    var imageDatasource: ImageDataSource?
+     let imageLoader: ImageLoader
+     var initialIndex: Int = 0
+     var theme: ImageViewerTheme = .dark
