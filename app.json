@@ -105,6 +105,7 @@
     },
     "extra": {
       "router": {},
+      "kakaoJsKey": "72400ba60e1a208bb3ff065e46ee276a",
       "eas": {
         "projectId": "0d5f5a6e-28ad-46a2-b8f1-d59f266c6203"
       }

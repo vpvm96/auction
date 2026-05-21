@@ -86,26 +86,26 @@ function LightboxRoot({ urls, children }: LightboxRootProps) {
 
 interface LightboxImageProps {
   index: number;
-  onWebPress?: () => void;
+  onModalPress?: () => void;
   children: ReactElement;
 }
 
-function LightboxImage({ index, onWebPress, children }: LightboxImageProps) {
-  if (IS_WEB) {
-    return <Pressable onPress={onWebPress}>{children}</Pressable>;
+function LightboxImage({ index, onModalPress, children }: LightboxImageProps) {
+  if (!HAS_NATIVE_LIGHTBOX) {
+    return <Pressable onPress={onModalPress}>{children}</Pressable>;
   }
-  if (!HAS_NATIVE_LIGHTBOX) return children;
   return <Galeria.Image index={index}>{children}</Galeria.Image>;
 }
 
-interface WebLightboxProps {
+interface ModalLightboxProps {
   urls: string[];
   initialIndex: number;
   onClose: () => void;
 }
 
-// 웹 전용 라이트박스: ScrollView + pagingEnabled로 좌우 스와이프 페이징을 구현한다.
-function WebLightbox({ urls, initialIndex, onClose }: WebLightboxProps) {
+// Galeria 네이티브 모듈이 없을 때(Expo Go, 구버전 TestFlight 빌드 등) 사용하는
+// Modal 기반 라이트박스. 웹에서도 동일하게 사용한다.
+function ModalLightbox({ urls, initialIndex, onClose }: ModalLightboxProps) {
   const { width, height } = useWindowDimensions();
   const scrollRef = useRef<ScrollView | null>(null);
   const [activeIndex, setActiveIndex] = useState(initialIndex);
@@ -214,7 +214,9 @@ export function AuctionImageCarousel({
   const [containerWidth, setContainerWidth] = useState(0);
   const itemWidth = containerWidth > 0 ? containerWidth : screenWidth;
   // 웹 전용 라이트박스 오픈 상태. 네이티브에서는 Galeria가 직접 처리한다.
-  const [webLightboxIndex, setWebLightboxIndex] = useState<number | null>(null);
+  const [modalLightboxIndex, setModalLightboxIndex] = useState<number | null>(
+    null,
+  );
 
   const listRef = useRef<FlashListRef<string> | null>(null);
 
@@ -225,7 +227,9 @@ export function AuctionImageCarousel({
     }
   };
 
-  const closeWebLightbox = () => setWebLightboxIndex(null);
+  const closeModalLightbox = () => setModalLightboxIndex(null);
+  const openModalLightbox = (index: number) => setModalLightboxIndex(index);
+  const useModalLightbox = !HAS_NATIVE_LIGHTBOX;
 
   if (imageUrls.length === 0) {
     return (
@@ -240,18 +244,18 @@ export function AuctionImageCarousel({
   if (imageUrls.length === 1) {
     return (
       <LightboxRoot urls={imageUrls}>
-        <LightboxImage index={0} onWebPress={() => setWebLightboxIndex(0)}>
+        <LightboxImage index={0} onModalPress={() => openModalLightbox(0)}>
           <Image
             source={{ uri: imageUrls[0] } as ImageSource}
             style={[styles.hero, { backgroundColor: theme.bg.sunken }]}
             contentFit="cover"
           />
         </LightboxImage>
-        {IS_WEB && webLightboxIndex !== null ? (
-          <WebLightbox
+        {useModalLightbox && modalLightboxIndex !== null ? (
+          <ModalLightbox
             urls={imageUrls}
-            initialIndex={webLightboxIndex}
-            onClose={closeWebLightbox}
+            initialIndex={modalLightboxIndex}
+            onClose={closeModalLightbox}
           />
         ) : null}
       </LightboxRoot>
@@ -291,7 +295,7 @@ export function AuctionImageCarousel({
   const renderItem = ({ item, index }: { item: string; index: number }) => (
     <LightboxImage
       index={index}
-      onWebPress={() => setWebLightboxIndex(index)}
+      onModalPress={() => openModalLightbox(index)}
     >
       <CarouselImage
         uri={item}
@@ -358,11 +362,11 @@ export function AuctionImageCarousel({
           })}
         </View>
       </View>
-      {IS_WEB && webLightboxIndex !== null ? (
-        <WebLightbox
+      {useModalLightbox && modalLightboxIndex !== null ? (
+        <ModalLightbox
           urls={imageUrls}
-          initialIndex={webLightboxIndex}
-          onClose={closeWebLightbox}
+          initialIndex={modalLightboxIndex}
+          onClose={closeModalLightbox}
         />
       ) : null}
     </LightboxRoot>

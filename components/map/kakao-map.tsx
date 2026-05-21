@@ -1,11 +1,12 @@
 // Kakao Maps JS API를 WebView로 띄우고 마커 + 로드뷰 토글을 제공하는 컴포넌트
+import { getKakaoJsKey } from "@/lib/constants/kakao";
 import { useTheme } from "@/hooks/useTheme";
 import { FontFamily, FontSize, Radius } from "@/constants/tokens";
 import { useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
-const KAKAO_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_JS_KEY ?? "";
+const KAKAO_JS_KEY = getKakaoJsKey();
 
 interface KakaoMapProps {
   /** 우선 검색어 (예: 물건명 cltrNm) */
