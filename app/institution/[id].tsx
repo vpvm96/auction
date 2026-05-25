@@ -1,4 +1,5 @@
 import { Divider } from "@/components/ui/divider";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   FontFamily,
   FontSize,
@@ -11,15 +12,8 @@ import { formatFullDate } from "@/lib/format";
 import { useInstitutionAuctionDetail } from "@/lib/queries/institution-auction";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface InfoRowProps {
   label: string;
@@ -91,10 +85,7 @@ export default function InstitutionDetailScreen() {
           style={[styles.titleSection, { backgroundColor: theme.bg.surface }]}
         >
           <View
-            style={[
-              styles.tag,
-              { backgroundColor: theme.brand.primaryLight },
-            ]}
+            style={[styles.tag, { backgroundColor: theme.brand.primaryLight }]}
           >
             <Text style={[styles.tagText, { color: theme.brand.primary }]}>
               기관 공매

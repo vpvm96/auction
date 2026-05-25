@@ -76,7 +76,9 @@ export default function InstitutionScreen() {
 
   const isFocused = useIsFocused();
   const filterScrollRef = useRef<ScrollView>(null);
-  const tabLayoutsRef = useRef<Record<string, { x: number; width: number }>>({});
+  const tabLayoutsRef = useRef<Record<string, { x: number; width: number }>>(
+    {},
+  );
 
   useEffect(() => {
     const layout = tabLayoutsRef.current[selectedKey];
@@ -89,8 +91,14 @@ export default function InstitutionScreen() {
 
   const activeTab = FILTER_TABS.find((t) => t.key === selectedKey);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, refetch } =
-    useInstitutionAuctions({ category: activeTab?.category });
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    refetch,
+  } = useInstitutionAuctions({ category: activeTab?.category });
 
   const allItems = (data?.pages ?? []).flatMap((p) => p.items);
   const totalCount = data?.pages?.[0]?.totalCount ?? 0;
@@ -100,9 +108,7 @@ export default function InstitutionScreen() {
     selectedSort === "latest"
       ? allItems
       : selectedSort === "deadline"
-        ? [...allItems].sort((a, b) =>
-            a.pbctClsDtm.localeCompare(b.pbctClsDtm),
-          )
+        ? [...allItems].sort((a, b) => a.pbctClsDtm.localeCompare(b.pbctClsDtm))
         : [...allItems].sort((a, b) =>
             b.pbctBegnDtm.localeCompare(a.pbctBegnDtm),
           );

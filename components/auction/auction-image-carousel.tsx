@@ -1,19 +1,15 @@
 import { Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
-import { Galeria } from "@nandorojo/galeria";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
-import { requireOptionalNativeModule } from "expo-modules-core";
 import { Image, type ImageSource } from "expo-image";
 import {
   type ReactElement,
-  type ReactNode,
   useEffect,
   useRef,
   useState,
 } from "react";
 import {
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +20,14 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const HERO_HEIGHT = 240;
 
@@ -55,46 +59,18 @@ function getImageItemType() {
   return "carousel-image";
 }
 
-// Galeria는 iOS/Android에서 네이티브 ViewManager(QuickLook 등)를 사용한다.
-// 다음과 같은 환경에서는 네이티브 코드가 바이너리에 없어 런타임에
-// "Unimplemented component: <ViewManagerAdapter_Galeria_...>" 가 화면에 찍힌다:
-//   1) Expo Go (네이티브 모듈 미포함)
-//   2) Galeria 설치 이전에 만들어진 dev build / TestFlight / 스토어 빌드
-//   3) prebuild 미실행으로 ios/ pods에 Galeria가 누락된 빌드
-//
-// Galeria v3는 Expo Modules(`requireNativeView`)로 등록되는 Fabric 뷰라
-// 레거시 `UIManager.hasViewManagerConfig`로는 New Architecture(RN 0.81/Expo 54
-// 기본값) 빌드에서 정상 링크돼 있어도 false가 반환되어 TestFlight에서
-// 라이트박스가 비활성화되는 버그가 있었다. Expo Modules 레지스트리를 직접
-// 조회하는 `requireOptionalNativeModule`로 검사한다 (네이티브 측 `Name("Galeria")`).
-//
-// 웹은 Galeria가 단일 이미지 팝업만 지원하고 스와이프가 없으므로
-// 아래 WebLightbox로 대체한다.
-const IS_WEB = Platform.OS === "web";
-const HAS_NATIVE_LIGHTBOX =
-  !IS_WEB && requireOptionalNativeModule("Galeria") != null;
-
-interface LightboxRootProps {
-  urls: string[];
-  children: ReactNode;
-}
-
-function LightboxRoot({ urls, children }: LightboxRootProps) {
-  if (!HAS_NATIVE_LIGHTBOX) return <>{children}</>;
-  return <Galeria urls={urls}>{children}</Galeria>;
-}
-
+// Galeria native lightbox는 New Architecture(Fabric) + FlashList horizontal
+// 조합에서 native hit-test가 일관되지 않아 TestFlight 빌드에서 탭이 인식되지
+// 않는 문제가 있었다. 100% 동작 보장을 위해 Modal 기반 라이트박스 단일 경로로
+// 통일한다. native swipe-to-dismiss / pinch-to-zoom UX를 다시 도입하려면 별도
+// zoom 라이브러리(react-native-image-zoom-viewer 등) 또는 직접 구현을 검토.
 interface LightboxImageProps {
-  index: number;
-  onModalPress?: () => void;
+  onPress: () => void;
   children: ReactElement;
 }
 
-function LightboxImage({ index, onModalPress, children }: LightboxImageProps) {
-  if (!HAS_NATIVE_LIGHTBOX) {
-    return <Pressable onPress={onModalPress}>{children}</Pressable>;
-  }
-  return <Galeria.Image index={index}>{children}</Galeria.Image>;
+function LightboxImage({ onPress, children }: LightboxImageProps) {
+  return <Pressable onPress={onPress}>{children}</Pressable>;
 }
 
 interface ModalLightboxProps {
@@ -103,12 +79,18 @@ interface ModalLightboxProps {
   onClose: () => void;
 }
 
-// Galeria 네이티브 모듈이 없을 때(Expo Go, 구버전 TestFlight 빌드 등) 사용하는
-// Modal 기반 라이트박스. 웹에서도 동일하게 사용한다.
+// 캐러셀 이미지 탭 시 띄우는 라이트박스. RN Modal + 가로 페이징 ScrollView 기반.
+// - 가로 스와이프: ScrollView가 페이지 전환
+// - 세로 스와이프(위/아래): PanGesture가 잡아 close (드래그 거리/속도 임계값 초과 시)
+//   activeOffsetY + failOffsetX 조합으로 두 제스처를 충돌 없이 분리.
 function ModalLightbox({ urls, initialIndex, onClose }: ModalLightboxProps) {
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView | null>(null);
   const [activeIndex, setActiveIndex] = useState(initialIndex);
+
+  const translateY = useSharedValue(0);
+  const overlayOpacity = useSharedValue(1);
 
   // Modal 마운트 직후 초기 인덱스로 스크롤 위치를 맞춘다.
   useEffect(() => {
@@ -129,46 +111,82 @@ function ModalLightbox({ urls, initialIndex, onClose }: ModalLightboxProps) {
     if (clamped !== activeIndex) setActiveIndex(clamped);
   };
 
+  // 세로 15px 이상 먼저 움직이면 close 제스처 활성화, 가로 15px 먼저면 ScrollView에 위임
+  const panGesture = Gesture.Pan()
+    .activeOffsetY([-15, 15])
+    .failOffsetX([-15, 15])
+    .onUpdate((e) => {
+      translateY.set(e.translationY);
+      const progress = Math.min(Math.abs(e.translationY) / 300, 1);
+      overlayOpacity.set(1 - progress * 0.7);
+    })
+    .onEnd((e) => {
+      const shouldClose =
+        Math.abs(e.translationY) > 120 || Math.abs(e.velocityY) > 800;
+      if (shouldClose) {
+        const exitTo = e.translationY > 0 ? height : -height;
+        overlayOpacity.set(withTiming(0, { duration: 180 }));
+        translateY.set(
+          withTiming(exitTo, { duration: 180 }, (finished) => {
+            if (finished) runOnJS(onClose)();
+          }),
+        );
+      } else {
+        translateY.set(withTiming(0, { duration: 180 }));
+        overlayOpacity.set(withTiming(1, { duration: 180 }));
+      }
+    });
+
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.get() }],
+  }));
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.get(),
+  }));
+
+  // safe area를 반영한 상단 오프셋 (노치/다이나믹 아일랜드 회피)
+  const topInset = insets.top + Spacing.sm;
+
   return (
-    <Modal
-      visible
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.lightboxOverlay}>
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          style={styles.lightboxScroll}
-        >
-          {urls.map((url, i) => (
-            <View
-              key={`${i}-${url}`}
-              style={{
-                width,
-                height,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <Animated.View style={[styles.lightboxOverlay, overlayStyle]}>
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[StyleSheet.absoluteFill, sheetStyle]}>
+            <ScrollView
+              ref={scrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              style={styles.lightboxScroll}
             >
-              <Image
-                source={{ uri: url } as ImageSource}
-                style={{ width, height }}
-                contentFit="contain"
-                transition={150}
-              />
-            </View>
-          ))}
-        </ScrollView>
+              {urls.map((url, i) => (
+                <View
+                  key={`${i}-${url}`}
+                  style={{
+                    width,
+                    height,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Image
+                    source={{ uri: url } as ImageSource}
+                    style={{ width, height }}
+                    contentFit="contain"
+                    transition={150}
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        </GestureDetector>
 
         <Pressable
           onPress={onClose}
-          style={styles.lightboxClose}
+          style={[styles.lightboxClose, { top: topInset }]}
+          hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="닫기"
         >
@@ -176,13 +194,16 @@ function ModalLightbox({ urls, initialIndex, onClose }: ModalLightboxProps) {
         </Pressable>
 
         {urls.length > 1 ? (
-          <View style={styles.lightboxCounter} pointerEvents="none">
+          <View
+            style={[styles.lightboxCounter, { top: topInset }]}
+            pointerEvents="none"
+          >
             <Text style={styles.lightboxCounterText}>
               {`${activeIndex + 1} / ${urls.length}`}
             </Text>
           </View>
         ) : null}
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
@@ -229,7 +250,6 @@ export function AuctionImageCarousel({
 
   const closeModalLightbox = () => setModalLightboxIndex(null);
   const openModalLightbox = (index: number) => setModalLightboxIndex(index);
-  const useModalLightbox = !HAS_NATIVE_LIGHTBOX;
 
   if (imageUrls.length === 0) {
     return (
@@ -243,22 +263,22 @@ export function AuctionImageCarousel({
 
   if (imageUrls.length === 1) {
     return (
-      <LightboxRoot urls={imageUrls}>
-        <LightboxImage index={0} onModalPress={() => openModalLightbox(0)}>
+      <>
+        <LightboxImage onPress={() => openModalLightbox(0)}>
           <Image
             source={{ uri: imageUrls[0] } as ImageSource}
             style={[styles.hero, { backgroundColor: theme.bg.sunken }]}
             contentFit="cover"
           />
         </LightboxImage>
-        {useModalLightbox && modalLightboxIndex !== null ? (
+        {modalLightboxIndex !== null ? (
           <ModalLightbox
             urls={imageUrls}
             initialIndex={modalLightboxIndex}
             onClose={closeModalLightbox}
           />
         ) : null}
-      </LightboxRoot>
+      </>
     );
   }
 
@@ -293,10 +313,7 @@ export function AuctionImageCarousel({
   };
 
   const renderItem = ({ item, index }: { item: string; index: number }) => (
-    <LightboxImage
-      index={index}
-      onModalPress={() => openModalLightbox(index)}
-    >
+    <LightboxImage onPress={() => openModalLightbox(index)}>
       <CarouselImage
         uri={item}
         width={itemWidth}
@@ -306,7 +323,7 @@ export function AuctionImageCarousel({
   );
 
   return (
-    <LightboxRoot urls={imageUrls}>
+    <>
       <View
         style={[styles.hero, { backgroundColor: theme.bg.sunken }]}
         onLayout={handleLayout}
@@ -362,14 +379,14 @@ export function AuctionImageCarousel({
           })}
         </View>
       </View>
-      {useModalLightbox && modalLightboxIndex !== null ? (
+      {modalLightboxIndex !== null ? (
         <ModalLightbox
           urls={imageUrls}
           initialIndex={modalLightboxIndex}
           onClose={closeModalLightbox}
         />
       ) : null}
-    </LightboxRoot>
+    </>
   );
 }
 
@@ -417,7 +434,6 @@ const styles = StyleSheet.create({
   },
   lightboxClose: {
     position: "absolute",
-    top: Spacing.md,
     right: Spacing.md,
     width: 40,
     height: 40,
@@ -434,7 +450,6 @@ const styles = StyleSheet.create({
   },
   lightboxCounter: {
     position: "absolute",
-    top: Spacing.md,
     alignSelf: "center",
     paddingHorizontal: Spacing.md,
     paddingVertical: 6,
