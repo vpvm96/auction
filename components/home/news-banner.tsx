@@ -1,19 +1,20 @@
 import { FontFamily, FontSize, Radius, Spacing } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
-import { MOCK_NEWS_ARTICLES } from "@/lib/mock-data";
+import { useRecentNews } from "@/lib/queries/news";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 interface NewsItemProps {
-  id: string;
   title: string;
+  originalLink: string;
   index: number;
 }
 
-function NewsItemRow({ id, title, index }: NewsItemProps) {
+function NewsItemRow({ title, originalLink, index }: NewsItemProps) {
   const theme = useTheme();
-  const handlePress = () => router.push(`/news/${id}`);
+  const handlePress = () => WebBrowser.openBrowserAsync(originalLink);
 
   return (
     <Pressable
@@ -41,7 +42,8 @@ function NewsItemRow({ id, title, index }: NewsItemProps) {
 
 export function NewsBanner() {
   const theme = useTheme();
-  const items = MOCK_NEWS_ARTICLES.slice(0, 2);
+  const { data } = useRecentNews(2);
+  const items = data ?? [];
 
   return (
     <View
@@ -97,8 +99,8 @@ export function NewsBanner() {
         {items.map((item, i) => (
           <NewsItemRow
             key={item.id}
-            id={item.id}
             title={item.title}
+            originalLink={item.originalLink}
             index={i}
           />
         ))}

@@ -1,44 +1,53 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native'
+// 뉴스 목록 화면 — 실 API 페이지네이션 조회, 항목 클릭 시 원문(originalLink)을 인앱 웹뷰로 표시.
+import { ActivityIndicator, StyleSheet, Text, View, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
 import { router } from 'expo-router'
+import * as WebBrowser from 'expo-web-browser'
 import { Ionicons } from '@expo/vector-icons'
 import { FontFamily, FontSize, Spacing } from '@/constants/tokens'
 import { Badge } from '@/components/ui/badge'
-import { MOCK_NEWS_ARTICLES, type NewsArticle } from '@/lib/mock-data'
+import { useNews } from '@/lib/queries/news'
+import type { NewsResponse } from '@/lib/api/news'
 import { formatFullDate } from '@/lib/format'
 import { useTheme } from '@/hooks/useTheme'
 
-function NewsListItem({ id, category, title, date, source }: NewsArticle) {
+/** 원문 URL에서 호스트명만 추출 (출처 표기용) */
+function hostFromUrl(url: string): string {
+  return url.match(/^https?:\/\/(?:www\.)?([^/]+)/)?.[1] ?? ''
+}
+
+function NewsListItem({ query, title, pubDate, originalLink }: NewsResponse) {
   const theme = useTheme()
-  const handlePress = () => router.push(`/news/${id}`)
+  const handlePress = () => WebBrowser.openBrowserAsync(originalLink)
 
   return (
     <Pressable style={[styles.item, { backgroundColor: theme.bg.surface }]} onPress={handlePress}>
       <View style={styles.itemHeader}>
-        <Badge label={category} />
-        <Text style={[styles.itemDate, { color: theme.text.tertiary }]}>{formatFullDate(date)}</Text>
+        <Badge label={query} />
+        <Text style={[styles.itemDate, { color: theme.text.tertiary }]}>{formatFullDate(pubDate)}</Text>
       </View>
       <Text style={[styles.itemTitle, { color: theme.text.primary }]} numberOfLines={2}>
         {title}
       </Text>
       <View style={styles.itemFooter}>
-        <Text style={[styles.itemSource, { color: theme.text.secondary }]}>{source}</Text>
-        <Ionicons name="chevron-forward" size={14} color={theme.text.tertiary} />
+        <Text style={[styles.itemSource, { color: theme.text.secondary }]}>{hostFromUrl(originalLink)}</Text>
+        <Ionicons name="open-outline" size={14} color={theme.text.tertiary} />
       </View>
     </Pressable>
   )
 }
 
-function renderItem({ item }: { item: NewsArticle }) {
+function renderItem({ item }: { item: NewsResponse }) {
   return (
     <NewsListItem
       id={item.id}
-      category={item.category}
+      query={item.query}
       title={item.title}
-      date={item.date}
-      source={item.source}
-      body={item.body}
+      originalLink={item.originalLink}
+      link={item.link}
+      description={item.description}
+      pubDate={item.pubDate}
     />
   )
 }
@@ -50,6 +59,12 @@ function ItemSeparator() {
 
 export default function NewsListScreen() {
   const theme = useTheme()
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useNews()
+  const articles = data?.pages.flatMap((page) => page.items) ?? []
+
+  const handleEndReached = () => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage()
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg.base }]} edges={['top']}>
@@ -61,14 +76,34 @@ export default function NewsListScreen() {
         <View style={styles.navSpacer} />
       </View>
 
-      <FlashList
-        data={MOCK_NEWS_ARTICLES}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={ItemSeparator}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator color={theme.brand.primary} />
+        </View>
+      ) : (
+        <FlashList
+          data={articles}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          ItemSeparatorComponent={ItemSeparator}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
+          ListEmptyComponent={
+            <View style={styles.centered}>
+              <Text style={[styles.emptyText, { color: theme.text.secondary }]}>뉴스가 없습니다.</Text>
+            </View>
+          }
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View style={styles.footer}>
+                <ActivityIndicator color={theme.brand.primary} />
+              </View>
+            ) : null
+          }
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -129,5 +164,17 @@ const styles = StyleSheet.create({
   separator: {
     height: StyleSheet.hairlineWidth,
     marginHorizontal: Spacing.page,
+  },
+  centered: {
+    paddingVertical: Spacing.section,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: FontSize.base,
+    fontFamily: FontFamily.regular,
+  },
+  footer: {
+    paddingVertical: Spacing.xxl,
   },
 })
