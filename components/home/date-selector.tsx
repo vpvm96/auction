@@ -15,8 +15,10 @@ import type { CalendarScheduleItem } from '@/lib/api/calendar'
 const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일']
 /** 주말 인덱스 — 토(5), 일(6) */
 const WEEKEND_INDEX = new Set([5, 6])
-/** 미리보기로 노출하는 최대 일정 수 */
+/** 미리보기로 노출하는 초기 일정 수 */
 const PREVIEW_LIMIT = 3
+/** "더보기" 클릭 시 한 번에 추가로 노출하는 일정 수 */
+const STEP = 20
 
 function getWeekDates(): { dayLabel: string; date: number; fullDate: Date; weekendIndex: boolean }[] {
   const today = new Date()
@@ -69,19 +71,20 @@ export function DateSelector({ onDateChange, schedules }: DateSelectorProps) {
   const today = new Date()
   const todayDate = today.getDate()
   const [selectedFullDate, setSelectedFullDate] = useState<Date>(today)
-  const [expanded, setExpanded] = useState(false)
+  // 한 번에 렌더하는 일정 수. 전체를 통째로 펼치면(예: 수천 건) 프리즈가 나므로 STEP씩 점진 노출한다.
+  const [visibleCount, setVisibleCount] = useState(PREVIEW_LIMIT)
 
   const selectedKey = toLocalDateKey(selectedFullDate)
   const selectedItems = schedules?.[selectedKey] ?? []
   const hasSchedules = schedules != null
-  const visibleItems = expanded
-    ? selectedItems
-    : selectedItems.slice(0, PREVIEW_LIMIT)
-  const hasMore = selectedItems.length > PREVIEW_LIMIT
+  const visibleItems = selectedItems.slice(0, visibleCount)
+  const hasMore = selectedItems.length > visibleCount
+  const canCollapse = visibleCount > PREVIEW_LIMIT
+  const remaining = selectedItems.length - visibleCount
 
   const handlePress = (fullDate: Date) => {
     setSelectedFullDate(fullDate)
-    setExpanded(false)
+    setVisibleCount(PREVIEW_LIMIT)
     onDateChange?.(fullDate)
   }
 
@@ -324,21 +327,27 @@ export function DateSelector({ onDateChange, schedules }: DateSelectorProps) {
                 <Pressable
                   accessible={true}
                   accessibilityRole="button"
-                  accessibilityLabel={
-                    expanded ? '일정 접기' : `이 날짜의 경매 ${selectedItems.length - PREVIEW_LIMIT}건 더 보기`
-                  }
-                  accessibilityState={{ expanded }}
-                  onPress={() => setExpanded((v) => !v)}
+                  accessibilityLabel={`이 날짜의 경매 ${Math.min(STEP, remaining)}건 더 보기 (남은 ${remaining}건)`}
+                  onPress={() => setVisibleCount((c) => c + STEP)}
                   style={styles.moreBtn}
                 >
                   <Text style={[styles.moreBtnText, { color: theme.text.brand }]}>
-                    {expanded ? '접기' : `${selectedItems.length - PREVIEW_LIMIT}건 더보기`}
+                    {`${Math.min(STEP, remaining)}건 더보기`}
                   </Text>
-                  <Ionicons
-                    name={expanded ? 'chevron-up' : 'chevron-down'}
-                    size={12}
-                    color={theme.text.brand}
-                  />
+                  <Ionicons name="chevron-down" size={12} color={theme.text.brand} />
+                </Pressable>
+              ) : null}
+
+              {canCollapse ? (
+                <Pressable
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="일정 접기"
+                  onPress={() => setVisibleCount(PREVIEW_LIMIT)}
+                  style={styles.moreBtn}
+                >
+                  <Text style={[styles.moreBtnText, { color: theme.text.tertiary }]}>접기</Text>
+                  <Ionicons name="chevron-up" size={12} color={theme.text.tertiary} />
                 </Pressable>
               ) : null}
             </Animated.View>
