@@ -2,7 +2,7 @@
   "expo": {
     "name": "HB Auction",
     "slug": "property-auction",
-    "version": "1.1.3",
+    "version": "1.1.4",
     "orientation": "portrait",
     "scheme": "propertyauction",
     "icon": "./assets/images/icon.png",
@@ -97,7 +97,8 @@
           "sounds": []
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,
