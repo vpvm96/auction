@@ -22,6 +22,7 @@
 ## 주요 기능
 
 ### 경매 조회
+
 - 홈 화면: 오늘의 경매 통계, 날짜별 일정, 카테고리 바로가기, 뉴스/퀴즈 배너
 - 경매 목록: 아파트·주택·오피스텔·상가·토지·자동차·중기 등 유형별 필터, 법원 지역 필터
 - 정렬: 최신순·마감순·가격순, 무한 스크롤
@@ -30,6 +31,7 @@
 - 기관(법원) 별 경매 모아보기
 
 ### 사용자 기능
+
 - 즐겨찾기 / 최근 본 매물
 - 경매 일정 푸시 알림 (입찰 마감 알림)
 - 경매 퀴즈
@@ -37,6 +39,7 @@
 - 마이페이지: 프로필 편집, 알림 설정, 약관·개인정보처리방침, 회원 탈퇴, 버전 정보
 
 ### 디자인 시스템
+
 - 라이트 / 다크 모드 (system / light / dark 선택 가능)
 - 자체 토큰 시스템 (`constants/theme.ts`, `constants/tokens.ts`)
 - 공용 UI primitives: Button, Text, Chip, Card, Badge, Skeleton, Toast 등
@@ -78,7 +81,7 @@ property-auction/
 ├── __tests__/                  # Jest unit / integration 테스트
 ├── e2e/                        # Playwright E2E 테스트
 ├── android/ · ios/             # 네이티브 프로젝트
-└── docs/                       # API 스펙 등 문서
+└── docs/                       # 스토어 지원·약관 페이지 (GitHub Pages 호스팅)
 ```
 
 ## 시작하기
@@ -151,3 +154,10 @@ iOS 로컬 릴리스 빌드:
 pnpm ios:release          # 시뮬레이터
 pnpm ios:release:device   # 실 디바이스
 ```
+
+- **법적/지원 페이지**: `docs/` 폴더의 정적 HTML (GitHub Pages로 호스팅)
+  - 고객지원 (지원 URL): `https://vpvm96.github.io/hb-auction/`
+  - 개인정보처리방침 (필수): `https://vpvm96.github.io/hb-auction/privacy.html`
+  - 이용약관: `https://vpvm96.github.io/hb-auction/terms.html`
+
+GitHub Pages 활성화: 리포 **Settings → Pages → Deploy from a branch → `/docs`**.
