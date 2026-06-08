@@ -1,4 +1,4 @@
-// 뉴스 API — 네이버 뉴스 수집 데이터 조회 (목록/최신/상세/검색). 인증 불필요(public).
+// 뉴스 API — 네이버 뉴스 수집 데이터 조회 (목록/최신/상세/검색). 다른 엔드포인트와 동일한 인증 게이트웨이 사용.
 import { apiClient, buildQueryString } from './client'
 import type { PagedResponse } from './auctions'
 
@@ -36,29 +36,25 @@ export interface NewsSearchParams {
 
 // ─── API Functions ────────────────────────────────────────────────────────────
 
-const NEWS_BASE = '/hammer-auction'
+const NEWS_BASE = '/hammers/hammer-auctions'
 
 /** GET /news — 뉴스 목록 페이지네이션 조회 (최신순) */
 export function fetchNews(
   params: NewsListParams = {},
 ): Promise<PagedResponse<NewsResponse>> {
   const qs = buildQueryString({ size: 20, ...params })
-  return apiClient<PagedResponse<NewsResponse>>(`${NEWS_BASE}/news${qs}`, {
-    skipAuth: true,
-  })
+  return apiClient<PagedResponse<NewsResponse>>(`${NEWS_BASE}/news${qs}`)
 }
 
 /** GET /news/recent — 최신 뉴스 목록 (기본 5건) */
 export function fetchRecentNews(count = 5): Promise<NewsResponse[]> {
   const qs = buildQueryString({ count })
-  return apiClient<NewsResponse[]>(`${NEWS_BASE}/news/recent${qs}`, {
-    skipAuth: true,
-  })
+  return apiClient<NewsResponse[]>(`${NEWS_BASE}/news/recent${qs}`)
 }
 
 /** GET /news/{id} — 뉴스 상세 */
 export function fetchNewsDetail(id: string): Promise<NewsResponse> {
-  return apiClient<NewsResponse>(`${NEWS_BASE}/news/${id}`, { skipAuth: true })
+  return apiClient<NewsResponse>(`${NEWS_BASE}/news/${id}`)
 }
 
 /** GET /news/search — 제목 키워드 검색 (최신순) */
@@ -66,7 +62,5 @@ export function searchNews(
   params: NewsSearchParams = {},
 ): Promise<PagedResponse<NewsResponse>> {
   const qs = buildQueryString({ size: 20, ...params })
-  return apiClient<PagedResponse<NewsResponse>>(`${NEWS_BASE}/news/search${qs}`, {
-    skipAuth: true,
-  })
+  return apiClient<PagedResponse<NewsResponse>>(`${NEWS_BASE}/news/search${qs}`)
 }
