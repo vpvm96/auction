@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Platform } from 'react-native'
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? ''
 
@@ -46,6 +47,25 @@ export function resetForceLogoutFlag() {
 
 let _refreshPromise: Promise<string> | null = null
 
+// refresh 요청에 실어 보낼 Cookie 헤더를 네이티브 쿠키 저장소에서 직접 구성한다.
+// RN fetch의 credentials:'include' 자동 송출은 불안정해, refresh token(HttpOnly 쿠키)이
+// 누락된 채 요청이 도달하는 경우가 있다. CookieManager로 읽어 명시적으로 Cookie 헤더를 붙인다.
+// 웹은 브라우저가 HttpOnly 쿠키를 자동 전송하고 라이브러리가 web을 지원하지 않으므로 제외한다.
+async function buildRefreshCookieHeader(): Promise<string> {
+  if (Platform.OS === 'web') return ''
+  try {
+    const CookieManager = (
+      require('@react-native-cookies/cookies') as typeof import('@react-native-cookies/cookies')
+    ).default
+    const cookies = await CookieManager.get(BASE_URL)
+    return Object.values(cookies)
+      .map((c) => `${c.name}=${c.value}`)
+      .join('; ')
+  } catch {
+    return ''
+  }
+}
+
 async function tryRefreshToken(): Promise<string> {
   // 이미 강제 로그아웃이 진행 중이면 더 이상 refresh 시도하지 않음.
   // — 백엔드 장애로 retry가 계속 401을 받는 폭주 시나리오를 차단한다.
@@ -56,9 +76,18 @@ async function tryRefreshToken(): Promise<string> {
 
   _refreshPromise = (async () => {
     try {
+      const cookieHeader = await buildRefreshCookieHeader()
+      // 쿠키 값은 노출하지 않고 개수만 로깅 — refresh token 누락 여부를 진단하기 위함.
+      console.log('[API] ↺ refresh', {
+        cookies: cookieHeader ? cookieHeader.split('; ').length : 0,
+      })
+
       const res = await fetch(`${BASE_URL}/hammers/hammer-users/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        },
         credentials: 'include',
       })
 
