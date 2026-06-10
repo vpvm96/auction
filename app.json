@@ -2,7 +2,7 @@
   "expo": {
     "name": "HB Auction",
     "slug": "property-auction",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "orientation": "portrait",
     "scheme": "propertyauction",
     "icon": "./assets/images/icon.png",
@@ -58,7 +58,8 @@
       [
         "@react-native-seoul/kakao-login",
         {
-          "kakaoAppKey": "72400ba60e1a208bb3ff065e46ee276a"
+          "kakaoAppKey": "72400ba60e1a208bb3ff065e46ee276a",
+          "kotlinVersion": "2.1.20"
         }
       ],
       [
@@ -83,8 +84,10 @@
       [
         "expo-splash-screen",
         {
+          "image": "./assets/images/splash-icon.png",
           "backgroundColor": "#ffffff",
           "dark": {
+            "image": "./assets/images/splash-icon.png",
             "backgroundColor": "#ffffff"
           }
         }
