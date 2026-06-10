@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import {
   Pressable,
   ScrollView,
@@ -13,11 +13,13 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import Animated, {
   FadeIn,
   FadeInDown,
+  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Circle, Svg } from 'react-native-svg'
 
 import {
   FontFamily,
@@ -29,15 +31,16 @@ import {
 import { useTheme } from '@/hooks/useTheme'
 import {
   fetchRandomQuizzes,
-  submitQuizAttempt,
+  submitQuizAttempts,
   type QuizResponse,
+  type SubmitQuizAttemptsResponse,
 } from '@/lib/api/quizzes'
 
 const QUIZ_COUNT = 3
 
 // ─── 퀴즈 진행 상태 ──────────────────────────────────────────────────────────
 
-type QuizPhase = 'loading' | 'playing' | 'result'
+type QuizPhase = 'loading' | 'playing' | 'submitting' | 'result'
 
 interface AttemptResult {
   quizId: number
@@ -55,6 +58,8 @@ export default function QuizScreen() {
   const [results, setResults] = useState<AttemptResult[]>([])
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null)
   const [showExplanation, setShowExplanation] = useState(false)
+  const [serverResult, setServerResult] =
+    useState<SubmitQuizAttemptsResponse | null>(null)
 
   const {
     data: quizzes,
@@ -73,19 +78,23 @@ export default function QuizScreen() {
     }
   }, [quizzes, phase])
 
+  // 한 세트 풀이를 일괄 제출 (v2 batch API)
   const submitMutation = useMutation({
-    mutationFn: ({
-      quizId,
-      selectedIndex,
-    }: {
-      quizId: number
-      selectedIndex: number
-    }) => submitQuizAttempt(quizId, selectedIndex),
+    mutationFn: () =>
+      submitQuizAttempts(
+        results.map((r) => ({
+          quizId: r.quizId,
+          selectedIndex: r.selectedIndex,
+        })),
+      ),
   })
 
   const currentQuiz = quizzes?.[currentIndex]
   const totalQuizzes = quizzes?.length ?? QUIZ_COUNT
-  const correctCount = results.filter((r) => r.isCorrect).length
+  // 채점 결과는 서버 응답을 우선 사용하고, 제출 실패 시 로컬 계산으로 대체
+  const correctCount =
+    serverResult?.correct ?? results.filter((r) => r.isCorrect).length
+  const resultTotal = serverResult?.total ?? totalQuizzes
 
   // 보기 선택 핸들러
   const handleSelectChoice = (choiceIndex: number) => {
@@ -102,14 +111,24 @@ export default function QuizScreen() {
       ...prev,
       { quizId: quiz.id, selectedIndex: choiceIndex, isCorrect },
     ])
-
-    submitMutation.mutate({ quizId: quiz.id, selectedIndex: choiceIndex })
   }
 
   // 다음 문제 또는 결과 화면 이동
   const handleNext = () => {
     if (currentIndex + 1 >= totalQuizzes) {
-      setPhase('result')
+      // 마지막 문제면 한 세트 풀이를 일괄 제출하고 채점 결과를 받는다
+      setPhase('submitting')
+      submitMutation.mutate(undefined, {
+        onSuccess: (res) => {
+          setServerResult(res)
+          setPhase('result')
+        },
+        onError: () => {
+          // 제출 실패 시에도 로컬 채점 결과로 결과 화면을 보여준다
+          setServerResult(null)
+          setPhase('result')
+        },
+      })
     } else {
       setCurrentIndex((prev) => prev + 1)
       setSelectedChoice(null)
@@ -123,6 +142,7 @@ export default function QuizScreen() {
     setResults([])
     setSelectedChoice(null)
     setShowExplanation(false)
+    setServerResult(null)
     setPhase('loading')
     await refetch()
     setPhase('playing')
@@ -164,6 +184,16 @@ export default function QuizScreen() {
           <LoadingSpinner size="medium" />
           <Text style={[styles.loadingText, { color: theme.text.secondary }]}>
             퀴즈를 불러오고 있어요...
+          </Text>
+        </View>
+      ) : null}
+
+      {/* 채점 중 상태 */}
+      {phase === 'submitting' ? (
+        <View style={styles.center}>
+          <LoadingSpinner size="medium" />
+          <Text style={[styles.loadingText, { color: theme.text.secondary }]}>
+            풀이를 제출하고 채점하고 있어요...
           </Text>
         </View>
       ) : null}
@@ -215,7 +245,8 @@ export default function QuizScreen() {
           results={results}
           quizzes={quizzes ?? []}
           correctCount={correctCount}
-          total={totalQuizzes}
+          total={resultTotal}
+          serverGraded={serverResult != null}
           onRetry={handleRetry}
           onGoHome={() => router.back()}
         />
@@ -505,6 +536,63 @@ function ChoiceButton({
   )
 }
 
+// ─── 점수 링 (원형 진행률) ────────────────────────────────────────────────────
+
+const RING_SIZE = 168
+const RING_STROKE = 14
+const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2
+const RING_CIRC = 2 * Math.PI * RING_RADIUS
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle)
+
+interface ScoreRingProps {
+  fraction: number
+  color: string
+  trackColor: string
+  children: ReactNode
+}
+
+function ScoreRing({ fraction, color, trackColor, children }: ScoreRingProps) {
+  const progress = useSharedValue(0)
+
+  // 마운트 시 0 → 정답률까지 호를 채우며 점수를 드러낸다
+  useEffect(() => {
+    progress.set(withTiming(fraction, { duration: 1000 }))
+  }, [fraction, progress])
+
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: RING_CIRC * (1 - progress.get()),
+  }))
+
+  return (
+    <View style={styles.ringWrap}>
+      <Svg width={RING_SIZE} height={RING_SIZE} style={StyleSheet.absoluteFill}>
+        <Circle
+          cx={RING_SIZE / 2}
+          cy={RING_SIZE / 2}
+          r={RING_RADIUS}
+          stroke={trackColor}
+          strokeWidth={RING_STROKE}
+          fill="none"
+        />
+        <AnimatedCircle
+          cx={RING_SIZE / 2}
+          cy={RING_SIZE / 2}
+          r={RING_RADIUS}
+          stroke={color}
+          strokeWidth={RING_STROKE}
+          strokeLinecap="round"
+          fill="none"
+          strokeDasharray={RING_CIRC}
+          animatedProps={animatedProps}
+          transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
+        />
+      </Svg>
+      <View style={styles.ringCenter}>{children}</View>
+    </View>
+  )
+}
+
 // ─── 결과 화면 ────────────────────────────────────────────────────────────────
 
 interface QuizResultViewProps {
@@ -512,6 +600,7 @@ interface QuizResultViewProps {
   quizzes: QuizResponse[]
   correctCount: number
   total: number
+  serverGraded: boolean
   onRetry: () => void
   onGoHome: () => void
 }
@@ -521,6 +610,7 @@ function QuizResultView({
   quizzes,
   correctCount,
   total,
+  serverGraded,
   onRetry,
   onGoHome,
 }: QuizResultViewProps) {
@@ -532,6 +622,7 @@ function QuizResultView({
     if (score >= 50) return theme.brand.accent
     return theme.status.danger
   }
+  const scoreColor = getScoreColor()
 
   const getScoreMessage = () => {
     if (score === 100) return '완벽해요! 경매 전문가시네요!'
@@ -562,30 +653,76 @@ function QuizResultView({
           theme.shadow.md,
         ]}
       >
-        <View
-          style={[
-            styles.scoreIconWrap,
-            { backgroundColor: `${getScoreColor()}18` },
-          ]}
+        <ScoreRing
+          fraction={total > 0 ? correctCount / total : 0}
+          color={scoreColor}
+          trackColor={theme.bg.sunken}
         >
           <Ionicons
             name={getScoreEmoji() as 'trophy' | 'star' | 'thumbs-up' | 'book'}
-            size={40}
-            color={getScoreColor()}
+            size={26}
+            color={scoreColor}
           />
-        </View>
-
-        <Text style={[styles.scoreValue, { color: getScoreColor() }]}>
-          {score}점
-        </Text>
-
-        <Text style={[styles.scoreDetail, { color: theme.text.secondary }]}>
-          {total}문제 중 {correctCount}문제 정답
-        </Text>
+          <Text style={[styles.scoreValue, { color: scoreColor }]}>
+            {score}
+            <Text style={[styles.scoreUnit, { color: scoreColor }]}>점</Text>
+          </Text>
+          <Text style={[styles.scoreFraction, { color: theme.text.tertiary }]}>
+            {correctCount}/{total} 정답
+          </Text>
+        </ScoreRing>
 
         <Text style={[styles.scoreMessage, { color: theme.text.primary }]}>
           {getScoreMessage()}
         </Text>
+
+        {/* 정답·오답 요약 칩 */}
+        <View style={styles.statRow}>
+          <View
+            style={[styles.statPill, { backgroundColor: theme.status.successBg }]}
+          >
+            <Ionicons
+              name="checkmark-circle"
+              size={16}
+              color={theme.status.success}
+            />
+            <Text style={[styles.statPillText, { color: theme.status.success }]}>
+              정답 {correctCount}
+            </Text>
+          </View>
+          <View
+            style={[styles.statPill, { backgroundColor: theme.status.dangerBg }]}
+          >
+            <Ionicons
+              name="close-circle"
+              size={16}
+              color={theme.status.danger}
+            />
+            <Text style={[styles.statPillText, { color: theme.status.danger }]}>
+              오답 {total - correctCount}
+            </Text>
+          </View>
+        </View>
+
+        {serverGraded ? (
+          <View
+            style={[
+              styles.gradedBadge,
+              { backgroundColor: theme.status.successBg },
+            ]}
+          >
+            <Ionicons
+              name="shield-checkmark"
+              size={14}
+              color={theme.status.success}
+            />
+            <Text
+              style={[styles.gradedBadgeText, { color: theme.status.success }]}
+            >
+              서버 채점 완료
+            </Text>
+          </View>
+        ) : null}
       </Animated.View>
 
       {/* 문제별 결과 요약 */}
@@ -596,55 +733,96 @@ function QuizResultView({
         {results.map((result, idx) => {
           const quiz = quizzes[idx]
           if (!quiz) return null
+          const accent = result.isCorrect
+            ? theme.status.success
+            : theme.status.danger
           return (
             <Animated.View
               key={result.quizId}
-              entering={FadeInDown.delay(idx * 100).duration(300)}
+              entering={FadeInDown.delay(idx * 80).duration(300)}
               style={[
                 styles.resultItem,
                 {
                   backgroundColor: theme.bg.surface,
                   borderColor: theme.border.default,
                 },
+                theme.shadow.sm,
               ]}
             >
-              <View
-                style={[
-                  styles.resultBadge,
-                  {
-                    backgroundColor: result.isCorrect
-                      ? theme.status.successBg
-                      : theme.status.dangerBg,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={result.isCorrect ? 'checkmark' : 'close'}
-                  size={14}
-                  color={
-                    result.isCorrect
-                      ? theme.status.success
-                      : theme.status.danger
-                  }
-                />
-              </View>
+              {/* 왼쪽 정답/오답 색상 바 */}
+              <View style={[styles.resultStripe, { backgroundColor: accent }]} />
+
               <View style={styles.resultContent}>
-                <Text
-                  style={[styles.resultQuestion, { color: theme.text.primary }]}
-                  numberOfLines={2}
-                >
-                  Q{idx + 1}. {quiz.question}
-                </Text>
-                {!result.isCorrect ? (
+                {/* 헤더: 문제 번호 + 정답/오답 칩 */}
+                <View style={styles.resultHeader}>
                   <Text
+                    style={[styles.resultNumber, { color: theme.text.tertiary }]}
+                  >
+                    Q{idx + 1}
+                  </Text>
+                  <View
                     style={[
-                      styles.resultAnswer,
-                      { color: theme.text.secondary },
+                      styles.resultStatusChip,
+                      {
+                        backgroundColor: result.isCorrect
+                          ? theme.status.successBg
+                          : theme.status.dangerBg,
+                      },
                     ]}
                   >
-                    정답: {quiz.choices[quiz.correctIndex]}
-                  </Text>
+                    <Ionicons
+                      name={
+                        result.isCorrect ? 'checkmark-circle' : 'close-circle'
+                      }
+                      size={13}
+                      color={accent}
+                    />
+                    <Text style={[styles.resultStatusText, { color: accent }]}>
+                      {result.isCorrect ? '정답' : '오답'}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text
+                  style={[styles.resultQuestion, { color: theme.text.primary }]}
+                >
+                  {quiz.question}
+                </Text>
+
+                {/* 오답이면 내 답변 표시 */}
+                {!result.isCorrect ? (
+                  <View style={styles.answerRow}>
+                    <Text
+                      style={[
+                        styles.answerLabel,
+                        { color: theme.text.tertiary },
+                      ]}
+                    >
+                      내 답변
+                    </Text>
+                    <Text
+                      style={[styles.answerValue, { color: theme.status.danger }]}
+                      numberOfLines={2}
+                    >
+                      {quiz.choices[result.selectedIndex]}
+                    </Text>
+                  </View>
                 ) : null}
+
+                {/* 정답 표시 */}
+                <View style={styles.answerRow}>
+                  <Text
+                    style={[styles.answerLabel, { color: theme.text.tertiary }]}
+                  >
+                    정답
+                  </Text>
+                  <Text
+                    style={[styles.answerValue, { color: theme.status.success }]}
+                    numberOfLines={2}
+                  >
+                    {quiz.choices[quiz.correctIndex]}
+                  </Text>
+                </View>
               </View>
             </Animated.View>
           )
@@ -872,25 +1050,34 @@ const styles = StyleSheet.create({
 
   // 결과 화면
   scoreCard: {
-    borderRadius: Radius.xl,
-    padding: Spacing.section,
+    borderRadius: Radius.xxl,
+    paddingVertical: Spacing.section + Spacing.md,
+    paddingHorizontal: Spacing.section,
     alignItems: 'center',
-    gap: Spacing.xl,
+    gap: Spacing.xxl,
     marginBottom: Spacing.section,
   },
-  scoreIconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: Radius.full,
-    justifyContent: 'center',
+  ringWrap: {
+    width: RING_SIZE,
+    height: RING_SIZE,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringCenter: {
+    alignItems: 'center',
+    gap: Spacing.xxs,
   },
   scoreValue: {
-    fontSize: 48,
+    fontSize: 44,
     fontFamily: FontFamily.extrabold,
+    lineHeight: 48,
   },
-  scoreDetail: {
-    fontSize: FontSize.base,
+  scoreUnit: {
+    fontSize: FontSize.xl,
+    fontFamily: FontFamily.bold,
+  },
+  scoreFraction: {
+    fontSize: FontSize.sm,
     fontFamily: FontFamily.medium,
   },
   scoreMessage: {
@@ -898,6 +1085,34 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.semibold,
     textAlign: 'center',
     lineHeight: LineHeight.normal,
+  },
+  statRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  statPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+  },
+  statPillText: {
+    fontSize: FontSize.md,
+    fontFamily: FontFamily.bold,
+  },
+  gradedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.sm,
+  },
+  gradedBadgeText: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.semibold,
   },
 
   // 결과 요약
@@ -912,32 +1127,60 @@ const styles = StyleSheet.create({
   },
   resultItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
     borderRadius: Radius.xl,
     borderWidth: 1,
-    padding: Spacing.xxl,
-    gap: Spacing.xl,
+    overflow: 'hidden',
   },
-  resultBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: Radius.full,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 2,
+  resultStripe: {
+    width: 4,
   },
   resultContent: {
     flex: 1,
-    gap: Spacing.xs,
+    gap: Spacing.md,
+    padding: Spacing.xxl,
+  },
+  resultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  resultNumber: {
+    fontSize: FontSize.sm,
+    fontFamily: FontFamily.extrabold,
+  },
+  resultStatusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xxs,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xxs,
+  },
+  resultStatusText: {
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.bold,
   },
   resultQuestion: {
     fontSize: FontSize.base,
-    fontFamily: FontFamily.medium,
+    fontFamily: FontFamily.semibold,
     lineHeight: LineHeight.normal,
   },
-  resultAnswer: {
+  answerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  answerLabel: {
+    width: 52,
     fontSize: FontSize.sm,
-    fontFamily: FontFamily.regular,
+    fontFamily: FontFamily.medium,
+    lineHeight: LineHeight.tight,
+  },
+  answerValue: {
+    flex: 1,
+    fontSize: FontSize.md,
+    fontFamily: FontFamily.semibold,
     lineHeight: LineHeight.tight,
   },
 
