@@ -24,6 +24,7 @@ jest.mock("@/lib/api/client", () => {
     removeAccessToken: jest.fn(async () => undefined),
     setForceLogoutCallback: jest.fn(),
     resetForceLogoutFlag: jest.fn(),
+    persistCookies: jest.fn(async () => undefined),
   };
 });
 

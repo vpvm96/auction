@@ -129,6 +129,44 @@ describe("apiClient", () => {
     expect(storage.removeItem).toHaveBeenCalledWith("access-token");
   });
 
+  it("keeps token and skips force-logout when refresh fails with a network error", async () => {
+    const storage = await loadStorage();
+    storage.getItem.mockResolvedValueOnce("expired-token");
+    fetchMock
+      .mockResolvedValueOnce(emptyResponse(401))
+      .mockRejectedValueOnce(new TypeError("Network request failed"));
+    const { apiClient, setForceLogoutCallback, resetForceLogoutFlag } = await import(
+      "@/lib/api/client"
+    );
+    const onLogout = jest.fn();
+    setForceLogoutCallback(onLogout);
+    resetForceLogoutFlag();
+
+    await expect(apiClient("/foo")).rejects.toMatchObject({ status: 401 });
+
+    expect(onLogout).not.toHaveBeenCalled();
+    expect(storage.removeItem).not.toHaveBeenCalledWith("access-token");
+  });
+
+  it("keeps token and skips force-logout when refresh fails with 5xx", async () => {
+    const storage = await loadStorage();
+    storage.getItem.mockResolvedValueOnce("expired-token");
+    fetchMock
+      .mockResolvedValueOnce(emptyResponse(401))
+      .mockResolvedValueOnce(emptyResponse(503));
+    const { apiClient, setForceLogoutCallback, resetForceLogoutFlag } = await import(
+      "@/lib/api/client"
+    );
+    const onLogout = jest.fn();
+    setForceLogoutCallback(onLogout);
+    resetForceLogoutFlag();
+
+    await expect(apiClient("/foo")).rejects.toMatchObject({ status: 503 });
+
+    expect(onLogout).not.toHaveBeenCalled();
+    expect(storage.removeItem).not.toHaveBeenCalledWith("access-token");
+  });
+
   it("triggers force-logout when retry returns 401", async () => {
     const storage = await loadStorage();
     storage.getItem.mockResolvedValueOnce("expired-token");

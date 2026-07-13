@@ -66,6 +66,22 @@ async function buildRefreshCookieHeader(): Promise<string> {
   }
 }
 
+// 로그인/refresh 응답의 Set-Cookie(refresh token)를 디스크에 즉시 기록한다.
+// Android WebView CookieManager는 쿠키를 비동기로 디스크에 쓰기 때문에,
+// flush 전에 앱 프로세스가 종료되면 회전된 refresh 쿠키가 유실되어
+// 다음 실행에서 refresh가 401로 실패하고 로그인이 풀린다.
+export async function persistCookies(): Promise<void> {
+  if (Platform.OS !== 'android') return
+  try {
+    const CookieManager = (
+      require('@react-native-cookies/cookies') as typeof import('@react-native-cookies/cookies')
+    ).default
+    await CookieManager.flush()
+  } catch {
+    // flush 실패는 치명적이지 않으므로 무시
+  }
+}
+
 async function tryRefreshToken(): Promise<string> {
   // 이미 강제 로그아웃이 진행 중이면 더 이상 refresh 시도하지 않음.
   // — 백엔드 장애로 retry가 계속 401을 받는 폭주 시나리오를 차단한다.
@@ -77,9 +93,11 @@ async function tryRefreshToken(): Promise<string> {
   _refreshPromise = (async () => {
     try {
       const cookieHeader = await buildRefreshCookieHeader()
-      // 쿠키 값은 노출하지 않고 개수만 로깅 — refresh token 누락 여부를 진단하기 위함.
+      // 쿠키 값은 노출하지 않고 이름만 로깅 — refresh token 누락 여부를 진단하기 위함.
       console.log('[API] ↺ refresh', {
-        cookies: cookieHeader ? cookieHeader.split('; ').length : 0,
+        cookies: cookieHeader
+          ? cookieHeader.split('; ').map((c) => c.split('=')[0])
+          : [],
       })
 
       const res = await fetch(`${BASE_URL}/hammers/hammer-users/auth/refresh`, {
@@ -97,12 +115,24 @@ async function tryRefreshToken(): Promise<string> {
 
       const data = (await res.json()) as { accessToken: string }
       await setAccessToken(data.accessToken)
+      // 서버가 refresh token을 회전(재발급)했을 수 있으므로 즉시 디스크에 기록한다.
+      await persistCookies()
       return data.accessToken
     } catch (error) {
-      await removeAccessToken()
-      if (!_isLoggingOut) {
-        _isLoggingOut = true
-        _onForceLogout?.()
+      // refresh token 자체가 무효(401/403)일 때만 로그아웃한다.
+      // 네트워크 오류·5xx 같은 일시 장애에 토큰을 지우면 멀쩡한 세션이
+      // 풀려버리므로, 토큰을 유지하고 다음 요청에서 다시 refresh를 시도한다.
+      const status = error instanceof ApiError ? error.status : null
+      if (status === 401 || status === 403) {
+        await removeAccessToken()
+        if (!_isLoggingOut) {
+          _isLoggingOut = true
+          _onForceLogout?.()
+        }
+      } else {
+        console.log('[API] ⚠ refresh 일시 실패 (토큰 유지, 다음 요청에서 재시도)', {
+          error: error instanceof Error ? error.message : String(error),
+        })
       }
       throw error
     } finally {

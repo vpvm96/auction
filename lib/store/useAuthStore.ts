@@ -9,6 +9,7 @@ import {
   removeAccessToken,
   setForceLogoutCallback,
   resetForceLogoutFlag,
+  persistCookies,
   ApiError,
 } from '@/lib/api/client'
 import {
@@ -80,6 +81,8 @@ export const useAuthStore = create<AuthStore>()(
           try {
             const res = await authApi.login({ email, password })
             await setAccessToken(res.accessToken)
+            // 로그인 응답의 refresh 쿠키가 앱 종료 시 유실되지 않도록 즉시 디스크에 기록
+            await persistCookies()
             await AsyncStorage.setItem(LAST_LOGIN_METHOD_KEY, 'email')
 
             resetForceLogoutFlag()
@@ -115,6 +118,7 @@ export const useAuthStore = create<AuthStore>()(
               agreeToTerms: true,
             })
             await setAccessToken(loginRes.accessToken)
+            await persistCookies()
             await AsyncStorage.setItem(LAST_LOGIN_METHOD_KEY, provider)
 
             resetForceLogoutFlag()
@@ -181,6 +185,7 @@ export const useAuthStore = create<AuthStore>()(
 
             const loginRes = await authApi.login({ email, password })
             await setAccessToken(loginRes.accessToken)
+            await persistCookies()
 
             resetForceLogoutFlag()
             set({
