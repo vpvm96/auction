@@ -109,9 +109,16 @@ export default function ListScreen() {
     }
   };
 
-  const allItems = (data?.pages ?? []).flatMap((p) =>
-    p.items.map(toAuctionItem),
-  );
+  // 최신순 목록은 페이지 로드 사이에 서버 데이터가 밀리면 페이지 간 중복 항목이
+  // 내려올 수 있다. 중복 key는 FlashList 레이아웃을 깨뜨려 빈 공간이 생기므로 걸러낸다.
+  const seenIds = new Set<string>();
+  const allItems = (data?.pages ?? [])
+    .flatMap((p) => p.items.map(toAuctionItem))
+    .filter((item) => {
+      if (seenIds.has(item.id)) return false;
+      seenIds.add(item.id);
+      return true;
+    });
   const totalCount = data?.pages?.[0]?.totalCount ?? 0;
 
   // "latest"는 allItems 그대로 (배열 ref 유지). 정렬이 필요한 경우만 새 배열을 만든다.
