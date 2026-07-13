@@ -3,6 +3,15 @@
  * Runs before all tests
  */
 
+// Mock react-native — node 환경 ts-jest는 react-native 소스(Flow 문법)를 파싱하지
+// 못하므로, lib 코드가 쓰는 Platform만 최소로 제공한다.
+jest.mock("react-native", () => ({
+  Platform: {
+    OS: "ios",
+    select: (obj) => obj.ios ?? obj.default,
+  },
+}));
+
 // Mock AsyncStorage
 jest.mock("@react-native-async-storage/async-storage", () => ({
   setItem: jest.fn(async () => null),
