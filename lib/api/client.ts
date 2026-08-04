@@ -186,10 +186,12 @@ export async function apiClient<T>(
     ...(fetchOptions.headers as Record<string, string>),
   }
 
+  let hasToken = false
   if (!skipAuth) {
     const token = await getAccessToken()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
+      hasToken = true
     }
   }
 
@@ -205,7 +207,9 @@ export async function apiClient<T>(
     headers,
   })
 
-  if (response.status === 401 && !skipAuth) {
+  // 애초에 access token이 없던 요청(비로그인)의 401은 "인증 필요"일 뿐이다.
+  // 여기서 refresh를 시도하면 실패 → 강제 로그아웃 콜백이 돌아 로그인 화면으로 튕긴다.
+  if (response.status === 401 && !skipAuth && hasToken) {
     console.log('[API] ↺', method, path, '401 → refresh 시도')
     try {
       const newToken = await tryRefreshToken()

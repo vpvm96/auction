@@ -6,6 +6,9 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+// 로그인 없이 열람 가능한 화면. 회원가입 약관 동의 단계에서 "보기"로 진입한다.
+const PUBLIC_ROUTES = new Set(["my/terms", "my/privacy"]);
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const segments = useSegments();
   const router = useRouter();
@@ -23,8 +26,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!hasHydrated || !isMounted) return;
 
     const inAuthGroup = segments[0] === "auth";
+    const isPublicRoute = PUBLIC_ROUTES.has(segments.join("/"));
 
-    if (!isLoggedIn && !inAuthGroup) {
+    if (!isLoggedIn && !inAuthGroup && !isPublicRoute) {
       router.replace("/auth/login");
     } else if (isLoggedIn && inAuthGroup) {
       router.replace("/(tabs)");
