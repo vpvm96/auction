@@ -21,25 +21,34 @@ import {
 } from "@/constants/tokens";
 import { useTheme } from "@/hooks/useTheme";
 import type { LegalDocumentResponse } from "@/lib/api/legal";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 
 interface LegalDocumentScreenProps {
   title: string;
   queryKey: string;
   queryFn: () => Promise<LegalDocumentResponse>;
+  /** 비로그인 상태에서 대신 보여줄 앱 번들 원문 (서버 API는 인증 필요) */
+  fallback: LegalDocumentResponse;
 }
 
 export function LegalDocumentScreen({
   title,
   queryKey,
   queryFn,
+  fallback,
 }: LegalDocumentScreenProps) {
   const theme = useTheme();
   const markdownStyles = StyleSheet.create(createMarkdownStyles(theme));
 
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+
   const documentQuery = useQuery({
     queryKey: ["legal-document", queryKey],
     queryFn,
+    enabled: isLoggedIn,
   });
+
+  const legalDocument = isLoggedIn ? documentQuery.data : fallback;
 
   return (
     <SafeAreaView
@@ -75,14 +84,14 @@ export function LegalDocumentScreen({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {documentQuery.isLoading ? (
+        {isLoggedIn && documentQuery.isLoading ? (
           <View style={styles.stateCard}>
             <ActivityIndicator color={theme.brand.primary} />
             <Text style={[styles.stateText, { color: theme.text.secondary }]}>
               문서를 불러오는 중입니다.
             </Text>
           </View>
-        ) : documentQuery.isError ? (
+        ) : isLoggedIn && documentQuery.isError ? (
           <View
             style={[styles.stateCard, { borderColor: theme.border.default }]}
           >
@@ -109,7 +118,7 @@ export function LegalDocumentScreen({
               </Text>
             </Pressable>
           </View>
-        ) : documentQuery.data != null ? (
+        ) : legalDocument != null ? (
           <View
             style={[
               styles.documentShell,
@@ -132,7 +141,7 @@ export function LegalDocumentScreen({
                   버전
                 </Text>
                 <Text style={[styles.metaValue, { color: theme.text.primary }]}>
-                  {documentQuery.data.version}
+                  {legalDocument.version}
                 </Text>
               </View>
               <View
@@ -148,7 +157,7 @@ export function LegalDocumentScreen({
                   시행일
                 </Text>
                 <Text style={[styles.metaValue, { color: theme.text.primary }]}>
-                  {documentQuery.data.effectiveDate}
+                  {legalDocument.effectiveDate}
                 </Text>
               </View>
             </View>
@@ -167,7 +176,7 @@ export function LegalDocumentScreen({
                 ]}
               >
                 <Markdown style={markdownStyles}>
-                  {documentQuery.data.content}
+                  {legalDocument.content}
                 </Markdown>
               </View>
             </View>
