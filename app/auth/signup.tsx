@@ -15,12 +15,12 @@ import {
     View,
 } from "react-native";
 import Animated, {
-    FadeInDown,
-    FadeInUp,
-    FadeOutUp,
+    Easing,
+    FadeIn,
+    FadeOut,
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
+    withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -123,7 +123,10 @@ export default function SignupScreen() {
 
   useEffect(() => {
     progress.set(
-      withSpring((step + 1) / TOTAL_STEPS, { damping: 20, stiffness: 90 }),
+      withTiming((step + 1) / TOTAL_STEPS, {
+        duration: 260,
+        easing: Easing.out(Easing.quad),
+      }),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
@@ -252,8 +255,8 @@ export default function SignupScreen() {
         <View style={styles.body}>
           <Animated.View
             key={`step-${step}`}
-            entering={FadeInUp.duration(400).springify().damping(18)}
-            exiting={FadeOutUp.duration(200)}
+            entering={FadeIn.duration(220)}
+            exiting={FadeOut.duration(120)}
             style={styles.stepContent}
           >
             <Text style={[styles.stepTitle, { color: theme.text.primary }]}>
@@ -431,7 +434,7 @@ export default function SignupScreen() {
 
             {displayError != null ? (
               <Animated.View
-                entering={FadeInDown.duration(250)}
+                entering={FadeIn.duration(180)}
                 style={styles.errorRow}
               >
                 <Ionicons
